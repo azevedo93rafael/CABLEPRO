@@ -66,6 +66,20 @@ export interface MaterialCategory {
   icon: string;
 }
 
+export interface CapitolatoMetadata {
+  project_title: string;
+  project_description: string;
+  project_address: string;
+  document_title: string;
+  client: string;
+  revisione: string;
+  data: string;
+  disciplina: string;
+  eseguito: string;
+  verificato: string;
+  approvato: string;
+}
+
 export interface CapitolatoProject {
   id: string;
   title: string;
@@ -74,8 +88,40 @@ export interface CapitolatoProject {
   description: string;
   premise: string;
   clientName?: string;
-  selectedMaterials: MaterialItem[]; // Store full objects instead of IDs
+  selectedMaterials: TechnicalElement[];
+  ordered_elements?: ComposerItem[];
+  metadata?: CapitolatoMetadata;
+  template_url?: string;
   lastSaved?: string;
+}
+
+export type ComposerItemType = 'element' | 'chapter';
+
+export interface ComposerItem {
+  id: string;
+  type: ComposerItemType;
+  title: string;
+  metadata?: any; // For elements: elementId, for chapters: empty
+  elementId?: string; // If type is element
+  children?: ComposerItem[]; // For nested chapters if needed, or flat structure
+}
+
+export interface TechnicalElement {
+  id: string;
+  titolo: string;
+  image?: string;           // URL from storage or base64
+  category_id?: string;     // maps to MATERIAL_CATEGORIES id
+  descrizione?: string;
+  caratteristiche_dimensionali?: string;
+  riferimenti_normativi?: string;
+  caratteristiche_tecniche?: string;
+  tipo_impiego?: string;
+  modalita_installazione?: string;
+  controlli_collaudi?: string;
+  documentazione?: string;
+  marca?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Translation {

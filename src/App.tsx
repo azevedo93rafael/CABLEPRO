@@ -47,6 +47,18 @@ export default function App() {
     return <ModuleSelector onSelect={setActiveModule} t={TRANSLATIONS[lang]} allowedModules={user.accessible_modules} />;
   }
 
+  // Capitolato has its own full-screen layout – render it outside MainLayout
+  if (activeModule === 'capitolato') {
+    return (
+      <CapitolatoModule 
+        key="capitolato"
+        user={user as any} 
+        onBack={() => setActiveModule(null)} 
+        showToast={showToast} 
+      />
+    );
+  }
+
   return (
     <MainLayout
       isShortcutsModalOpen={isShortcutsModalOpen}
@@ -65,17 +77,6 @@ export default function App() {
           {activeTab === 'database' && <DatabaseView key="database" />}
           {activeTab === 'users' && user.role === 'admin' && <UserManagement key="users" t={TRANSLATIONS[lang]} showToast={showToast} />}
         </>
-      )}
-
-      {activeModule === 'capitolato' && (
-        <CapitolatoModule 
-          key="capitolato"
-          user={user as any} 
-          t={TRANSLATIONS[lang]} 
-          darkMode={darkMode} 
-          onBack={() => setActiveModule(null)} 
-          showToast={showToast} 
-        />
       )}
     </MainLayout>
   );

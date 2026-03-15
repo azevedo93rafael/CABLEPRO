@@ -60,10 +60,19 @@ export function StructurePreview({ structure, cables, allCables, packedCables, f
 
   const cablesInThisStructure = useMemo(() => {
     if (!structure) return [];
+    const isSingle = packedCables.length === 1;
     return packedCables.map(c => ({
       ...c,
-      x: structure?.type === 'conduit' ? (c.px + (structure?.width || 0)/2) * scale : (c.px + c.diameter/2) * scale,
-      y: structure?.type === 'conduit' ? (c.py + (structure?.height || 0)/2) * scale : ((structure?.height || 0) - c.py - c.diameter/2) * scale
+      x: isSingle
+        ? (structure.width || 0) / 2 * scale
+        : structure?.type === 'conduit'
+          ? (c.px + (structure?.width || 0)/2) * scale
+          : (c.px + c.diameter/2) * scale,
+      y: isSingle
+        ? (structure.height || 0) / 2 * scale
+        : structure?.type === 'conduit'
+          ? (c.py + (structure?.height || 0)/2) * scale
+          : ((structure?.height || 0) - c.py - c.diameter/2) * scale
     }));
   }, [packedCables, scale, structure?.type, structure?.width, structure?.height]);
 
