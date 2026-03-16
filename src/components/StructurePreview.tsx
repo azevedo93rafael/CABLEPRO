@@ -63,12 +63,12 @@ export function StructurePreview({ structure, cables, allCables, packedCables, f
     const isSingle = packedCables.length === 1;
     return packedCables.map(c => ({
       ...c,
-      x: isSingle
+      x: isSingle && structure?.type === 'conduit'
         ? (structure.width || 0) / 2 * scale
         : structure?.type === 'conduit'
           ? (c.px + (structure?.width || 0)/2) * scale
           : (c.px + c.diameter/2) * scale,
-      y: isSingle
+      y: isSingle && structure?.type === 'conduit'
         ? (structure.height || 0) / 2 * scale
         : structure?.type === 'conduit'
           ? (c.py + (structure?.height || 0)/2) * scale

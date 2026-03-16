@@ -296,7 +296,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
               </div>
             ))}
             <button 
-              onClick={addNewProject}
+              onClick={() => addNewProject(t)}
               className="p-4 text-black/40 dark:text-white/40 hover:text-[#81292C] transition-colors"
               title={t.preview.newProject}
             >
