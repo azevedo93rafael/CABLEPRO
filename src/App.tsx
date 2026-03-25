@@ -10,6 +10,7 @@ import { CableManagement } from './components/views/CableManagement';
 import { DatabaseView } from './components/views/DatabaseView';
 import { UserManagement } from './components/UserManagement';
 import { CapitolatoModule } from './components/CapitolatoModule';
+import { CabineMTModule } from './components/CabineMTModule';
 import { TRANSLATIONS } from './constants';
 
 import { supabase } from './lib/supabase';
@@ -44,7 +45,9 @@ export default function App() {
 
   // Module Selector logic
   if (!activeModule) {
-    return <ModuleSelector onSelect={setActiveModule} t={TRANSLATIONS[lang]} allowedModules={user.accessible_modules} />;
+    const ALL_MODULES = ['cablefill', 'capitolato', 'cabine-mt'];
+    const allowedModules = user.role === 'admin' ? ALL_MODULES : (user.accessible_modules || []);
+    return <ModuleSelector onSelect={setActiveModule} t={TRANSLATIONS[lang]} allowedModules={allowedModules} />;
   }
 
   // Capitolato has its own full-screen layout – render it outside MainLayout
@@ -55,6 +58,18 @@ export default function App() {
         user={user as any} 
         onBack={() => setActiveModule(null)} 
         showToast={showToast} 
+      />
+    );
+  }
+
+  // Cabine MT has its own full-screen layout – render it outside MainLayout
+  if (activeModule === 'cabine-mt') {
+    return (
+      <CabineMTModule
+        key="cabine-mt"
+        user={user as any}
+        onBack={() => setActiveModule(null)}
+        showToast={showToast}
       />
     );
   }

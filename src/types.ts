@@ -431,4 +431,97 @@ export interface Translation {
     evac: string;
     irai: string;
   };
+  cabineMT: {
+    /** Module metadata */
+    moduleName: string;
+    moduleDesc: string;
+    /** Section headers */
+    inputParameters: string;
+    results: string;
+    /** Input labels */
+    numTransformers: string;
+    powerKVA: string;
+    primaryVoltageKV: string;
+    secondaryVoltageV: string;
+    shortCircuitVoltagePct: string;
+    shortCircuitVoltageDefault: string;
+    faultTimeS: string;
+    conductorMaterial: string;
+    copper: string;
+    aluminum: string;
+    /** Result labels */
+    totalPower: string;
+    shortCircuitCurrent: string;
+    earthingCable: string;
+    collectorBusbar: string;
+    equipotentialBandella: string;
+    calculatedSection: string;
+    normalizedSection: string;
+    normativeReference: string;
+    kFactor: string;
+    /** Units */
+    unitA: string;
+    unitMM2: string;
+    unitKVA: string;
+    unitKV: string;
+    unitV: string;
+    unitS: string;
+    unitPct: string;
+    unitW: string;
+    unitKW: string;
+    unitM: string;
+    unitM3: string;
+    unitM3h: string;
+    unitBTU: string;
+    /** Actions */
+    exportPDF: string;
+    back: string;
+    calculating: string;
+    noResults: string;
+    fillInputs: string;
+    /** Validation */
+    mustBePositive: string;
+    invalidInput: string;
+    mustBeInteger: string;
+    /** Project management */
+    saveProject: string;
+    newProject: string;
+    projectSaved: string;
+    mustBeLoggedIn: string;
+    /** Tab navigation */
+    groundingTab: string;
+    ventilationTab: string;
+    /** Ventilation */
+    addElement: string;
+    thermalElements: string;
+    chooseElementType: string;
+    transformer: string;
+    switchboardMT: string;
+    switchboardBT: string;
+    cabineDimensions: string;
+    cabineHeight: string;
+    cabineWidth: string;
+    cabineLength: string;
+    efficiency: string;
+    dissipatedPower: string;
+    nominalCurrent: string;
+    nominalCurrentOptional: string;
+    totalHeat: string;
+    btuRequired: string;
+    airflowRequired: string;
+    cabineVolume: string;
+    noElements: string;
+    addFirstElement: string;
+    elementLabel: string;
+    quantity: string;
+    editElement: string;
+    removeElement: string;
+    addElementTitle: string;
+    ventilationResults: string;
+    thermalBreakdown: string;
+    deltaT: string;
+    confirm: string;
+    cancel: string;
+  };
 }
+

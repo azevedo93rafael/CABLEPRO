@@ -33,7 +33,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
     email: '',
     password: '',
     role: 'user',
-    accessible_modules: ['cablefill', 'capitolato']
+    accessible_modules: ['cablefill', 'capitolato', 'cabine-mt']
   });
   const [creatingUser, setCreatingUser] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -105,7 +105,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
         email: '',
         password: '',
         role: 'user',
-        accessible_modules: ['cablefill', 'capitolato']
+        accessible_modules: ['cablefill', 'capitolato', 'cabine-mt']
       });
       await fetchUsers();
       showToast(t.userManagement.userCreated, 'success');
@@ -159,7 +159,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
     setEditForm({
       name: user.name || user.full_name || user.nome || user.display_name || user.username || '',
       role: user.role,
-      accessible_modules: user.accessible_modules || ['cablefill', 'capitolato']
+      accessible_modules: user.accessible_modules || ['cablefill', 'capitolato', 'cabine-mt']
     });
   };
 
@@ -340,6 +340,16 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                   >
                     Capitolato Pro
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleModule('cabine-mt', true)}
+                    className={`flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all ${newUserForm.accessible_modules.includes('cabine-mt')
+                      ? 'bg-[#81292C] text-white border-[#81292C]'
+                      : 'bg-transparent text-[#5a5a5a] border-black/10 dark:text-white/60 dark:border-white/10'
+                      }`}
+                  >
+                    Cabine MT
+                  </button>
                 </div>
               </div>
 
@@ -460,12 +470,22 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                             >
                               CP
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleModule('cabine-mt')}
+                              className={`px-2 py-1 text-[8px] font-bold uppercase border transition-all ${editForm.accessible_modules.includes('cabine-mt')
+                                ? 'bg-[#81292C] text-white border-[#81292C]'
+                                : 'bg-transparent text-[#5a5a5a] border-black/10 dark:text-white/60 dark:border-white/10'
+                                }`}
+                            >
+                              CMT
+                            </button>
                           </div>
                         ) : (
                           <div className="flex gap-1">
-                            {(u.accessible_modules || ['cablefill', 'capitolato']).map((m: string) => (
+                            {(u.accessible_modules || ['cablefill', 'capitolato', 'cabine-mt']).map((m: string) => (
                               <span key={m} className="text-[8px] font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 rounded uppercase opacity-60">
-                                {m === 'cablefill' ? 'CF' : 'CP'}
+                                {m === 'cablefill' ? 'CF' : m === 'capitolato' ? 'CP' : 'CMT'}
                               </span>
                             ))}
                           </div>

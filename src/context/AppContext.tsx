@@ -8,8 +8,8 @@ interface AppContextType {
   setDarkMode: (mode: boolean) => void;
   activeTab: 'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users';
   setActiveTab: (tab: 'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users') => void;
-  activeModule: 'cablefill' | 'capitolato' | null;
-  setActiveModule: (module: 'cablefill' | 'capitolato' | null) => void;
+  activeModule: 'cablefill' | 'capitolato' | 'cabine-mt' | null;
+  setActiveModule: (module: 'cablefill' | 'capitolato' | 'cabine-mt' | null) => void;
   toastData: { message: string; type: 'success' | 'error' } | null;
   showToast: (message: string, type?: 'success' | 'error') => void;
   previewZoom: number;
@@ -24,7 +24,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLang] = useState<Language>('it');
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users'>('dashboard');
-  const [activeModule, setActiveModule] = useState<'cablefill' | 'capitolato' | null>(null);
+  const [activeModule, setActiveModule] = useState<'cablefill' | 'capitolato' | 'cabine-mt' | null>(null);
   const [toastData, setToastData] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [isExporting, setIsExporting] = useState(false);
