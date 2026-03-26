@@ -85,7 +85,7 @@ interface CapitolatoModuleProps {
 }
 
 export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoModuleProps, 't' | 'darkMode'>) {
-  const { lang, setLang, darkMode, setDarkMode } = useApp();
+  const { lang, setLang, darkMode, setDarkMode, moduleTheme } = useApp();
   const t = TRANSLATIONS[lang];
   const [materials, setMaterials] = useState<TechnicalElement[]>([]);
   const [activeView, setActiveView] = useState<'dashboard' | 'editor' | 'projects' | 'users' | 'preview' | 'elements' | 'elementForm'>('dashboard');
@@ -605,16 +605,17 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
   return (
     <div className="flex h-screen bg-[#f5f5f5] dark:bg-[#0a0a0a] text-[#141414] dark:text-white overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-72 bg-[#401318] text-white flex flex-col shadow-2xl z-20 border-r border-white/5">
-        <div className="p-8 border-b border-white/10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
-              <FileText size={24} />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold tracking-tight leading-none">CAPITOLATO PRO</h1>
-              <p className="text-[10px] opacity-50 font-bold uppercase tracking-widest mt-1">INGEGNERIA</p>
-            </div>
+      <aside
+        className="w-64 text-white flex flex-col shadow-2xl z-20 border-r border-white/5 transition-colors duration-300"
+        style={{ backgroundColor: darkMode ? moduleTheme.dark : moduleTheme.primary }}
+      >
+        <div className="p-6 flex items-center gap-3 border-b border-white/10">
+          <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center flex-shrink-0">
+            <FileText size={20} />
+          </div>
+          <div>
+            <h1 className="text-sm font-bold tracking-wider uppercase">CAPITOLATO PRO</h1>
+            <p className="text-[10px] opacity-50">Rilo Elettrico</p>
           </div>
         </div>
 
@@ -739,7 +740,8 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                 <button 
                   onClick={handleExportWord}
                   disabled={isExporting}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-[#401318] text-white rounded-xl font-bold text-sm hover:bg-[#5a1b22] transition-all shadow-lg shadow-[#401318]/20 disabled:opacity-50"
+                  className="flex items-center gap-2 px-6 py-2.5 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg disabled:opacity-50"
+                  style={{ backgroundColor: moduleTheme.accent }}
                 >
                   <FileDown size={18} />
                   {isExporting ? 'Esportazione...' : 'ESPORTA IN WORD'}
@@ -763,7 +765,8 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                 <div className="grid grid-cols-3 gap-6">
                   <button 
                     onClick={handleNewProject}
-                    className="col-span-2 group bg-[#401318] p-10 rounded-[32px] text-white flex flex-col justify-between h-64 shadow-2xl shadow-[#401318]/20 relative overflow-hidden"
+                    className="col-span-2 group p-10 rounded-[32px] text-white flex flex-col justify-between h-64 shadow-2xl relative overflow-hidden"
+                    style={{ backgroundColor: moduleTheme.primary }}
                   >
                     <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:scale-110 transition-transform">
                       <Plus size={160} />
@@ -778,7 +781,7 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                   </button>
 
                   <div className="bg-white dark:bg-[#141414] p-10 rounded-[32px] border border-black/5 dark:border-white/5 flex flex-col justify-between h-64 shadow-xl shadow-black/5">
-                    <div className="w-16 h-16 bg-[#401318]/5 rounded-2xl flex items-center justify-center text-[#401318]">
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${moduleTheme.accent}15`, color: moduleTheme.accent }}>
                       <FolderOpen size={32} />
                     </div>
                     <div>

@@ -46,7 +46,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   customCables,
   customStructures
 }) => {
-  const { lang, setLang, darkMode, setDarkMode, activeTab, setActiveTab, activeModule, setActiveModule, toastData, showToast } = useApp();
+  const { lang, setLang, darkMode, setDarkMode, activeTab, setActiveTab, activeModule, setActiveModule, moduleTheme, toastData, showToast } = useApp();
   const { user, setUser } = useAuth();
   const { 
     projects, 
@@ -74,7 +74,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   return (
     <div className="flex h-screen bg-[#efefef] dark:bg-[#0A0A0A] font-sans text-[#5a5a5a] dark:text-[#F5F5F5] transition-colors duration-300">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#401318] dark:bg-[#000000] text-white flex flex-col border-r border-white/5 shrink-0 z-20">
+      <aside
+        className="w-64 text-white flex flex-col border-r border-white/5 shrink-0 z-20 transition-colors duration-300"
+        style={{ backgroundColor: darkMode ? moduleTheme.dark : moduleTheme.primary }}
+      >
         <div className="p-6 flex items-center gap-3 border-b border-white/10">
           <Logo className="w-10 h-10 text-white dark:text-[#6A1B1B]" />
           <div>
@@ -148,7 +151,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         <div className="p-6 border-t border-white/10 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 bg-white/10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden">
-              <div className="w-full h-full flex items-center justify-center bg-[#81292C] text-white font-bold uppercase">
+              <div
+              className="w-full h-full flex items-center justify-center text-white font-bold uppercase"
+              style={{ backgroundColor: moduleTheme.accent }}
+            >
                 {(user?.name || user?.email || 'U').charAt(0)}
               </div>
             </div>

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo } from 'react';
 import { Language } from '../types';
+import { ModuleTheme, getModuleTheme } from '../config/moduleThemes';
 
 interface AppContextType {
   lang: Language;
@@ -10,6 +11,7 @@ interface AppContextType {
   setActiveTab: (tab: 'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users') => void;
   activeModule: 'cablefill' | 'capitolato' | 'cabine-mt' | null;
   setActiveModule: (module: 'cablefill' | 'capitolato' | 'cabine-mt' | null) => void;
+  moduleTheme: ModuleTheme;
   toastData: { message: string; type: 'success' | 'error' } | null;
   showToast: (message: string, type?: 'success' | 'error') => void;
   previewZoom: number;
@@ -28,6 +30,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [toastData, setToastData] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [isExporting, setIsExporting] = useState(false);
+
+  const moduleTheme = useMemo(() => getModuleTheme(activeModule), [activeModule]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToastData({ message, type });
@@ -48,6 +52,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       darkMode, setDarkMode,
       activeTab, setActiveTab,
       activeModule, setActiveModule,
+      moduleTheme,
       toastData, showToast,
       previewZoom, setPreviewZoom,
       isExporting, setIsExporting
