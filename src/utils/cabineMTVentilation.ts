@@ -1,91 +1,118 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// Módulo Cabine MT — Motor de Cálculo de Ventilação / Extração de Ar
-// Referências: ASHRAE Fundamentals, ISO 9241, VDI 2078
+// Módulo Cabine MT — Motor de Cálculo de Ventilação Paramétrico
+//
+// MÉTODO: Carga Térmica Paramétrica por Parcelas
+// ─────────────────────────────────────────────────────────────────────────────
+// Parcelas de carga:
+//   P_env      = 0.08 kW/m³ × Volume          (carga solar/envoltória)
+//   P_pessoas  = 0.30 kW                       (fixo, 2 pessoas)
+//   P_trafo    = Σ [perdas_kW_i × qty_i]       (perdas = perdasKW ?? kVA×0.025)
+//   P_quadros  = N_colunas × 0.15 kW           (células/colunas)
+//   P_total    = P_env + P_pessoas + P_trafo + P_quadros
+//
+// Resultados derivados:
+//   Portata (m³/h) = P_total [kW] × 200
+//   BTU/h          = P_total [kW] × 3412.14
 // ─────────────────────────────────────────────────────────────────────────────
 
 import {
-  ThermalElement,
-  CabineDimensions,
+  VentilationTransformer,
+  VentilationInputs,
   VentilationResults,
-  ElementBreakdown,
+  CabineDimensions,
 } from '../types/cabineMTVentilation';
 
-// ── Constantes físicas ────────────────────────────────────────────────────────
-const RHO_AIR = 1.2;       // kg/m³  — densidade do ar a 20°C e 1 atm
-const CP_AIR  = 1005;      // J/(kg·K) — calor específico do ar seco
-const BTU_PER_WATT = 3.412; // 1 W = 3.412 BTU/h
+// ── Constantes do método ────────────────────────────────────────────────────
+const P_ENV_KW_PER_M3   = 0.08;   // kW/m³ — carga de envoltória/solar
+const P_PESSOAS_KW      = 0.30;   // kW    — 2 pessoas (fixo)
+const TRAFO_LOSS_PCT     = 0.025;  // 2,5%  — perdas padrão quando não fornecidas
+const P_COLUMN_KW        = 0.15;   // kW/coluna — dissipaçao por coluna de quadro
+const AIRFLOW_FACTOR     = 200;    // m³/h por kW (ΔT = 15 K assumido)
+const BTU_PER_KW         = 3412.14;
+const DELTA_T_K          = 15;
 
-// ΔT padrão entre temperatura interior e exterior (cabine fechada com ar forçado)
-// Valor padrão conservativo conforme norma VDI 2078: 15 K
-const DEFAULT_DELTA_T_C = 15;
-
-/**
- * Calcula a dissipação térmica (W) de um único elemento por unidade.
- */
-export function calcElementHeatPerUnit(el: ThermalElement): number {
-  if (el.type === 'transformer') {
-    // P_loss = P_nominal(W) × (1 - η/100)
-    const kva = el.powerKVA ?? 630;
-    const eta = (el.efficiencyPct ?? 98.5) / 100;
-    return kva * 1000 * (1 - eta);
+// ── Cálculo de perdas por transformador (por unidade) ──────────────────────
+export function calcTrafoLossPerUnit(tr: VentilationTransformer): number {
+  if (tr.perdasKW !== undefined && tr.perdasKW > 0) {
+    return tr.perdasKW; // dado de datasheet — usar diretamente
   }
-  // Para quadros MT/BT: dissipação inserida diretamente pelo usuário
-  return el.dissipatedPowerW ?? 0;
+  return tr.powerKVA * TRAFO_LOSS_PCT; // estimativa: 2,5% da potência nominal
 }
 
-/**
- * Calcula os resultados completos de ventilação para um conjunto de
- * elementos térmicos e dimensões de cabine.
- *
- * Fórmulas:
- *   Q_total (W)   = Σ [ heatPerUnit_i × qty_i ]
- *   BTU/h         = Q_total × 3.412
- *   Q_ar (m³/h)   = Q_total / (ρ × Cp × ΔT) × 3600
- *   V_cabine (m³) = H × L × C
- */
+// ── Cálculo principal ────────────────────────────────────────────────────────
 export function calculateVentilation(
-  elements: ThermalElement[],
-  dimensions: CabineDimensions,
-  deltaTCelsius: number = DEFAULT_DELTA_T_C,
+  inputs: VentilationInputs,
 ): VentilationResults | null {
-  if (elements.length === 0) return null;
+  const { transformers, numSwitchboardColumns, dimensions } = inputs;
 
-  const breakdown: ElementBreakdown[] = elements.map((el) => {
-    const heatPerUnit = calcElementHeatPerUnit(el);
+  // Volume
+  const V = dimensions.heightM * dimensions.widthM * dimensions.lengthM;
+
+  // Parcela 1 — Envoltória / Solar
+  const pEnvKW = P_ENV_KW_PER_M3 * V;
+
+  // Parcela 2 — Ocupação (fixo)
+  const pPessoasKW = P_PESSOAS_KW;
+
+  // Parcela 3 — Transformadores
+  const trafoBreakdown = transformers.map((tr) => {
+    const perdasKWPerUnit = calcTrafoLossPerUnit(tr);
     return {
-      id: el.id,
-      label: el.label || el.type,
-      type: el.type,
-      heatPerUnitW: heatPerUnit,
-      totalHeatW: heatPerUnit * el.quantity,
-      quantity: el.quantity,
+      id: tr.id,
+      label: tr.label,
+      quantity: tr.quantity,
+      powerKVA: tr.powerKVA,
+      perdasKWPerUnit,
+      totalKW: perdasKWPerUnit * tr.quantity,
     };
   });
+  const pTrafoKW = trafoBreakdown.reduce((sum, t) => sum + t.totalKW, 0);
 
-  const totalHeatW = breakdown.reduce((sum, b) => sum + b.totalHeatW, 0);
-  const btuPerHour = totalHeatW * BTU_PER_WATT;
+  // Parcela 4 — Quadros (colunas/células)
+  const pQuadrosKW = (numSwitchboardColumns ?? 0) * P_COLUMN_KW;
 
-  // Q_ar = P_total / (ρ × Cp × ΔT) × 3600    [m³/h]
-  const airflowM3h = (totalHeatW / (RHO_AIR * CP_AIR * deltaTCelsius)) * 3600;
+  // Carga total
+  const totalHeatKW = pEnvKW + pPessoasKW + pTrafoKW + pQuadrosKW;
 
-  const cabineVolumeM3 =
-    (dimensions.heightM ?? 0) *
-    (dimensions.widthM ?? 0) *
-    (dimensions.lengthM ?? 0);
+  // Resultados derivados
+  const btuPerHour   = totalHeatKW * BTU_PER_KW;
+  const airflowM3h   = totalHeatKW * AIRFLOW_FACTOR;
+
+  const loadBreakdown = [
+    { label: 'P_env',     valueKW: pEnvKW     },
+    { label: 'P_pessoas', valueKW: pPessoasKW },
+    { label: 'P_trafo',   valueKW: pTrafoKW   },
+    { label: 'P_quadros', valueKW: pQuadrosKW },
+  ];
 
   return {
-    totalHeatW,
+    pEnvKW,
+    pPessoasKW,
+    pTrafoKW,
+    pQuadrosKW,
+    totalHeatKW,
+    totalHeatW: totalHeatKW * 1000,
     btuPerHour,
     airflowM3h,
-    cabineVolumeM3,
-    deltaTUsedC: deltaTCelsius,
-    breakdown,
+    cabineVolumeM3: V,
+    deltaTUsedC: DELTA_T_K,
+    trafoBreakdown,
+    loadBreakdown,
   };
 }
 
-/** Formata W com unidade adequada (W ou kW). */
-export function formatPower(watts: number): string {
-  return watts >= 1000
-    ? `${(watts / 1000).toFixed(2)} kW`
-    : `${watts.toFixed(0)} W`;
+/** Formata kW com unidade adequada. */
+export function formatPower(kw: number): string {
+  return kw >= 1 ? `${kw.toFixed(2)} kW` : `${(kw * 1000).toFixed(0)} W`;
 }
+
+// ── Exported constants (used by Report) ────────────────────────────────────
+export const VENTILATION_CONSTANTS = {
+  P_ENV_KW_PER_M3,
+  P_PESSOAS_KW,
+  TRAFO_LOSS_PCT,
+  P_COLUMN_KW,
+  AIRFLOW_FACTOR,
+  BTU_PER_KW,
+  DELTA_T_K,
+};

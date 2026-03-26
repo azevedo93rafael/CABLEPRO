@@ -7,7 +7,7 @@ import {
   DEFAULT_CABIN_DIMENSIONS,
   CALC_VERSION,
 } from '../types/cabineMT';
-import { ThermalElement, CabineDimensions } from '../types/cabineMTVentilation';
+import { VentilationTransformer, CabineDimensions } from '../types/cabineMTVentilation';
 
 // ── Default state ─────────────────────────────────────────────────────────────
 const DEFAULT_INPUTS: CabineMTInputs = {
@@ -26,7 +26,8 @@ function newProject(name: string): CabineMTProject {
     name,
     inputs: { ...DEFAULT_INPUTS },
     cabineDimensions: { ...DEFAULT_CABIN_DIMENSIONS },
-    thermalElements: [],
+    transformers: [],
+    numSwitchboardColumns: 0,
     calcVersion: CALC_VERSION,
   };
 }
@@ -40,7 +41,8 @@ interface CabineMTContextType {
   savedProjects: CabineMTProject[];
   updateInputs: (inputs: CabineMTInputs) => void;
   updateCabineDimensions: (dims: CabineDimensions) => void;
-  updateThermalElements: (elements: ThermalElement[]) => void;
+  updateTransformers: (transformers: VentilationTransformer[]) => void;
+  updateNumSwitchboardColumns: (num: number) => void;
   saveProject: (showToast: (msg: string, type: 'success' | 'error') => void, t: any) => Promise<void>;
   addNewProject: (t: any) => void;
   deleteProject: (id: string) => void;
@@ -91,7 +93,8 @@ export const CabineMTProvider = ({ children }: { children: ReactNode }) => {
             name: row.name,
             inputs: safeParse(row.inputs, { ...DEFAULT_INPUTS }),
             cabineDimensions: safeParse(row.cabin_dimensions, { ...DEFAULT_CABIN_DIMENSIONS }),
-            thermalElements: safeParse(row.thermal_elements, []),
+            transformers: safeParse(row.thermal_elements, []), // legacy fallback mapping
+            numSwitchboardColumns: row.num_switchboard_columns || 0,
             calcVersion: row.calc_version || CALC_VERSION,
             lastSaved: row.last_saved,
             notes: row.notes,
@@ -103,7 +106,8 @@ export const CabineMTProvider = ({ children }: { children: ReactNode }) => {
             parsed.length > 0 &&
             projects.length === 1 &&
             projects[0].name === 'PROGETTO 1' &&
-            projects[0].thermalElements.length === 0
+            projects[0].transformers.length === 0 &&
+            projects[0].numSwitchboardColumns === 0
           ) {
             setProjects([parsed[0]]);
             setActiveProjectId(parsed[0].id);
@@ -124,8 +128,10 @@ export const CabineMTProvider = ({ children }: { children: ReactNode }) => {
   const updateInputs = (inputs: CabineMTInputs) => updateActiveProject({ inputs });
   const updateCabineDimensions = (cabineDimensions: CabineDimensions) =>
     updateActiveProject({ cabineDimensions });
-  const updateThermalElements = (thermalElements: ThermalElement[]) =>
-    updateActiveProject({ thermalElements });
+  const updateTransformers = (transformers: VentilationTransformer[]) =>
+    updateActiveProject({ transformers });
+  const updateNumSwitchboardColumns = (numSwitchboardColumns: number) =>
+    updateActiveProject({ numSwitchboardColumns });
 
   const saveProject = async (
     showToast: (msg: string, type: 'success' | 'error') => void,
@@ -145,7 +151,8 @@ export const CabineMTProvider = ({ children }: { children: ReactNode }) => {
         user_id: user.id,
         inputs: updated.inputs,
         cabin_dimensions: updated.cabineDimensions,
-        thermal_elements: updated.thermalElements,
+        thermal_elements: updated.transformers, // mapping transformers to the JSON column
+        num_switchboard_columns: updated.numSwitchboardColumns,
         calc_version: updated.calcVersion,
         last_saved: now,
         notes: updated.notes ?? null,
@@ -214,7 +221,8 @@ export const CabineMTProvider = ({ children }: { children: ReactNode }) => {
         savedProjects,
         updateInputs,
         updateCabineDimensions,
-        updateThermalElements,
+        updateTransformers,
+        updateNumSwitchboardColumns,
         saveProject,
         addNewProject,
         deleteProject,

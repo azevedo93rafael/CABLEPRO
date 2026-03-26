@@ -2,8 +2,8 @@
 // Módulo de Cálculo da Cabine de Média Tensão — Types
 // ────────────────────────────────────────────────────────────────────────────
 
-import { ThermalElement, CabineDimensions, DEFAULT_CABIN_DIMENSIONS } from './cabineMTVentilation';
-export type { ThermalElement, CabineDimensions };
+import { VentilationTransformer, CabineDimensions, DEFAULT_CABIN_DIMENSIONS } from './cabineMTVentilation';
+export type { VentilationTransformer, CabineDimensions };
 export { DEFAULT_CABIN_DIMENSIONS };
 
 export type ConductorMaterial = 'copper' | 'aluminum';
@@ -20,7 +20,8 @@ export interface CabineMTProject {
   name: string;
   inputs: CabineMTInputs;
   cabineDimensions: CabineDimensions;
-  thermalElements: ThermalElement[];
+  transformers: VentilationTransformer[];
+  numSwitchboardColumns: number;
   calcVersion: string;
   lastSaved?: string;
   notes?: string;
