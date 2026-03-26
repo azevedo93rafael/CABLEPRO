@@ -3,23 +3,28 @@
 // Normas: ASHRAE Fundamentals, VDI 2078, IEC 62271-202, CEI 11-35
 // ─────────────────────────────────────────────────────────────────────────────
 
+export type VentilationElementType = 'transformer' | 'switchboard';
+
 /**
- * Transformador instalado na cabine.
- * A perda térmica é calculada como: perdasKW ?? (powerKVA × 0.025).
+ * Elemento térmico instalado na cabine (Transformador ou Quadro).
  */
-export interface VentilationTransformer {
+export interface VentilationElement {
   id: string;
-  /** Rótulo livre (ex: "TR1", "Transformador Principal") */
+  type: VentilationElementType;
+  /** Rótulo livre (ex: "TR1", "QGBT Principal") */
   label: string;
   /** Quantidade de unidades iguais */
   quantity: number;
+
+  // ── Transformador ──
   /** Potência nominal (kVA) */
-  powerKVA: number;
-  /**
-   * Perdas totais específicas em kW, extraídas do datasheet.
-   * Se não fornecido, assume-se 2,5% da potência nominal.
-   */
+  powerKVA?: number;
+  /** Perdas totais do datasheet em kW. Se não fornecido, usa-se 2,5% do kVA. */
   perdasKW?: number;
+
+  // ── Quadros ──
+  /** Quantidade de colunas/células que o quadro possui. */
+  numColumns?: number;
 }
 
 /**
@@ -35,9 +40,7 @@ export interface CabineDimensions {
  * Entradas completas do módulo de ventilação.
  */
 export interface VentilationInputs {
-  transformers: VentilationTransformer[];
-  /** Número total de colunas/células de quadros (MT + BT) */
-  numSwitchboardColumns: number;
+  elements: VentilationElement[];
   dimensions: CabineDimensions;
 }
 
@@ -54,25 +57,20 @@ export interface LoadBreakdownItem {
  */
 export interface VentilationResults {
   // ── Parcelas de carga (kW) ──────────────────────────────────────────────────
-  pEnvKW: number;       // Carga de envoltória / solar: 0.08 kW/m³ × V
-  pPessoasKW: number;   // Carga de ocupação: 0.3 kW (fixo)
-  pTrafoKW: number;     // Carga total dos transformadores
-  pQuadrosKW: number;   // Carga total dos quadros: N_cols × 0.15 kW
-  totalHeatKW: number;  // P_total = soma das parcelas
+  pEnvKW: number;       // Carga solar: 0.08 kW/m³ × V
+  pPessoasKW: number;   // Ocupação: 0.3 kW
+  pTrafoKW: number;     // Total dos transformadores
+  pQuadrosKW: number;   // Total dos quadros: N_cols × 0.15 kW
+  totalHeatKW: number;  // Soma
 
   // ── Resultados derivados ────────────────────────────────────────────────────
-  /** P_total em Watts (para compatibilidade com relatório) */
   totalHeatW: number;
-  /** Potência de climatização necessária (BTU/h) */
   btuPerHour: number;
-  /** Portata de ar necessária para extração (m³/h) = P_total × 200 */
   airflowM3h: number;
-  /** Volume total da cabine (m³) */
   cabineVolumeM3: number;
-  /** Delta T usado (K) — fixo em 15 K */
   deltaTUsedC: number;
 
-  // ── Detalhe por transformador ───────────────────────────────────────────────
+  // ── Detalhe ─────────────────────────────────────────────────────────────────
   trafoBreakdown: {
     id: string;
     label: string;
@@ -81,8 +79,13 @@ export interface VentilationResults {
     perdasKWPerUnit: number;
     totalKW: number;
   }[];
-
-  // ── Detalhe completo das parcelas ───────────────────────────────────────────
+  quadrosBreakdown: {
+    id: string;
+    label: string;
+    quantity: number;
+    numColumns: number;
+    totalKW: number;
+  }[];
   loadBreakdown: LoadBreakdownItem[];
 }
 
@@ -93,31 +96,6 @@ export const DEFAULT_CABIN_DIMENSIONS: CabineDimensions = {
 };
 
 export const DEFAULT_VENTILATION_INPUTS: VentilationInputs = {
-  transformers: [],
-  numSwitchboardColumns: 0,
+  elements: [],
   dimensions: { ...DEFAULT_CABIN_DIMENSIONS },
 };
-
-// ── Legacy aliases (kept for backward compat with existing report until updated) ──
-/** @deprecated use VentilationTransformer */
-export type ThermalElementType = 'transformer' | 'switchboard_mt' | 'switchboard_bt';
-/** @deprecated use VentilationTransformer */
-export interface ThermalElement {
-  id: string;
-  type: ThermalElementType;
-  label: string;
-  quantity: number;
-  powerKVA?: number;
-  efficiencyPct?: number;
-  dissipatedPowerW?: number;
-  nominalCurrentA?: number;
-  perdasKW?: number;
-}
-export interface ElementBreakdown {
-  id: string;
-  label: string;
-  type: ThermalElementType;
-  heatPerUnitW: number;
-  totalHeatW: number;
-  quantity: number;
-}

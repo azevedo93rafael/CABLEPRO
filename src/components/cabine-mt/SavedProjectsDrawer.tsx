@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Folder, Clock, ChevronRight, Trash2, FolderOpen } from 'lucide-react';
 import { Translation } from '../../types';
 import { CabineMTProject } from '../../types/cabineMT';
+import { useApp } from '../../context/AppContext';
 
 interface SavedProjectsDrawerProps {
   t: Translation['cabineMT'];
@@ -34,6 +35,7 @@ export function SavedProjectsDrawer({
   onDelete,
   onClose,
 }: SavedProjectsDrawerProps) {
+  const { moduleTheme } = useApp();
   return (
     <AnimatePresence>
       {/* Backdrop */}
@@ -58,7 +60,7 @@ export function SavedProjectsDrawer({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/5 dark:border-white/5">
           <div className="flex items-center gap-2">
-            <FolderOpen size={16} className="text-[#81292C]" />
+            <FolderOpen size={16} style={{ color: moduleTheme.accent }} />
             <p className="text-[10px] font-black uppercase tracking-widest dark:text-white">
               Banco de Projetos
             </p>
@@ -99,8 +101,8 @@ export function SavedProjectsDrawer({
                     onClick={() => { onLoad(p); onClose(); }}
                     className="flex-1 min-w-0 text-left flex items-center gap-3"
                   >
-                    <div className="w-8 h-8 rounded bg-[#81292C]/10 flex items-center justify-center flex-shrink-0">
-                      <Folder size={14} className="text-[#81292C]" />
+                    <div className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${moduleTheme.accent}1A` }}>
+                      <Folder size={14} style={{ color: moduleTheme.accent }} />
                     </div>
                     <div className="min-w-0">
                       <p className="text-[11px] font-bold dark:text-white truncate uppercase">
@@ -130,7 +132,7 @@ export function SavedProjectsDrawer({
                     className="opacity-0 group-hover:opacity-100 p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-all ml-1 flex-shrink-0"
                     title="Eliminar"
                   >
-                    <Trash2 size={12} className="text-[#81292C]" />
+                    <Trash2 size={12} style={{ color: moduleTheme.accent }} />
                   </button>
                 </motion.div>
               ))}

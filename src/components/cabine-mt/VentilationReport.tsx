@@ -1,21 +1,18 @@
 import React, { useRef } from 'react';
 import { motion } from 'motion/react';
-import { X, FileDown, Printer, Copy } from 'lucide-react';
+import { X, Printer } from 'lucide-react';
 import { Translation, Language } from '../../types';
 import {
-  VentilationTransformer,
+  VentilationElement,
   CabineDimensions,
   VentilationResults,
 } from '../../types/cabineMTVentilation';
-import {
-  VENTILATION_CONSTANTS,
-  formatPower
-} from '../../utils/cabineMTVentilation';
+import { formatPower } from '../../utils/cabineMTVentilation';
 import { Logo } from '../Logo';
+import { useApp } from '../../context/AppContext';
 
 interface VentilationReportProps {
-  transformers: VentilationTransformer[];
-  numSwitchboardColumns: number;
+  elements: VentilationElement[];
   dimensions: CabineDimensions;
   results: VentilationResults;
   lang: Language;
@@ -25,8 +22,7 @@ interface VentilationReportProps {
 }
 
 export function VentilationReport({
-  transformers,
-  numSwitchboardColumns,
+  elements,
   dimensions,
   results,
   lang,
@@ -34,6 +30,7 @@ export function VentilationReport({
   engineerName,
   onClose,
 }: VentilationReportProps) {
+  const { moduleTheme } = useApp();
   const contentRef = useRef<HTMLDivElement>(null);
 
   const tTitles = {
@@ -108,8 +105,8 @@ export function VentilationReport({
             <div className="text-right text-[10px] font-mono leading-relaxed text-black/60">
               <p>PROJETO: <strong className="text-black">{projectName}</strong></p>
               <p>DATA: <strong className="text-black">{new Date().toLocaleDateString(lang)}</strong></p>
-              <p>ENG: <strong className="text-black">{engineerName || 'Rilo Elettrico User'}</strong></p>
-              <p>SOFTWARE: <strong className="text-black">CABLEFILL PRO (CABINE MT)</strong></p>
+              <p>ENG: <strong className="text-black">{engineerName || 'User'}</strong></p>
+              <p>SOFTWARE: <strong className="text-black">CABINE MT (RILO)</strong></p>
             </div>
           </div>
 
@@ -117,7 +114,10 @@ export function VentilationReport({
 
             {/* Metodologia */}
             <section>
-              <h2 className="text-sm font-black uppercase tracking-widest border-b border-black/10 pb-2 mb-4 text-[#81292C]">
+              <h2
+                className="text-sm font-black uppercase tracking-widest border-b border-black/10 pb-2 mb-4"
+                style={{ color: moduleTheme.accent }}
+              >
                 {tTitles.methodology}
               </h2>
               <div className="prose prose-sm prose-black max-w-none text-black/80">
@@ -142,7 +142,10 @@ export function VentilationReport({
 
             {/* Parameters */}
             <section>
-              <h2 className="text-sm font-black uppercase tracking-widest border-b border-black/10 pb-2 mb-4 text-[#81292C]">
+              <h2
+                className="text-sm font-black uppercase tracking-widest border-b border-black/10 pb-2 mb-4"
+                style={{ color: moduleTheme.accent }}
+              >
                 1. Parâmetros da Cabine
               </h2>
               <div className="grid grid-cols-2 gap-8 text-xs font-mono">
@@ -163,7 +166,10 @@ export function VentilationReport({
 
             {/* Calculations Breakdown */}
             <section>
-              <h2 className="text-sm font-black uppercase tracking-widest border-b border-black/10 pb-2 mb-4 text-[#81292C]">
+               <h2
+                className="text-sm font-black uppercase tracking-widest border-b border-black/10 pb-2 mb-4"
+                style={{ color: moduleTheme.accent }}
+              >
                 2. {tTitles.details}
               </h2>
 
@@ -193,7 +199,7 @@ export function VentilationReport({
                       <table className="w-full mt-3 text-[10px] text-left">
                         <thead className="opacity-50 border-b border-black/10">
                           <tr>
-                            <th className="font-mono font-normal pb-1">Elemento</th>
+                            <th className="font-mono font-normal pb-1">Tag</th>
                             <th className="font-mono font-normal pb-1">Qtd</th>
                             <th className="font-mono font-normal pb-1">Potência (kVA)</th>
                             <th className="font-mono font-normal pb-1">Perda Un. (kW)</th>
@@ -215,10 +221,33 @@ export function VentilationReport({
                   <span className="font-mono">{formatPower(results.pTrafoKW)}</span>
                 </div>
 
-                <div className="flex justify-between items-center border-b border-dashed border-black/20 pb-2">
-                  <div>
+                <div className="flex justify-between items-start border-b border-dashed border-black/20 pb-2">
+                  <div className="flex-1">
                     <span className="font-bold font-mono text-sm">2.4 Quadros Elétricos MT/BT (P_quadros)</span>
-                    <p className="text-[10px] opacity-60">{numSwitchboardColumns} colunas × 0.15 kW/coluna</p>
+                    <p className="text-[10px] opacity-60">Somatório da dissipação das colunas de quadros (0.15 kW/col). </p>
+
+                    {results.quadrosBreakdown.length > 0 && (
+                      <table className="w-full mt-3 text-[10px] text-left">
+                        <thead className="opacity-50 border-b border-black/10">
+                          <tr>
+                            <th className="font-mono font-normal pb-1">Tag</th>
+                            <th className="font-mono font-normal pb-1">Qtd</th>
+                            <th className="font-mono font-normal pb-1">Colunas</th>
+                            <th className="font-mono font-normal pb-1">Dissipação Un. (kW)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {results.quadrosBreakdown.map((q) => (
+                            <tr key={q.id}>
+                              <td className="py-1 font-bold">{q.label}</td>
+                              <td className="py-1">{q.quantity}</td>
+                              <td className="py-1">{q.numColumns}</td>
+                              <td className="py-1">{(q.numColumns * 0.15).toFixed(2)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                   <span className="font-mono">{formatPower(results.pQuadrosKW)}</span>
                 </div>
@@ -251,7 +280,10 @@ export function VentilationReport({
                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-1">
                     Portata d'Aria (Exaustão)
                   </p>
-                  <p className="text-3xl font-black font-mono text-[#81292C]">
+                  <p
+                     className="text-3xl font-black font-mono"
+                     style={{ color: moduleTheme.accent }}
+                  >
                     {results.airflowM3h.toFixed(0)} m³/h
                   </p>
                   <p className="text-xs font-mono mt-1 opacity-70">
@@ -266,7 +298,7 @@ export function VentilationReport({
 
             <div className="pt-8 text-center opacity-30">
               <p className="text-[9px] font-bold uppercase tracking-widest">
-                Gerado por Rilo Elettrico — CableFill PRO Engine v1.0
+                Gerado por Rilo Elettrico — Cabine MT Engine v1.0
               </p>
             </div>
           </div>

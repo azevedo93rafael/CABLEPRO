@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { AlertCircle, CheckCircle2, BookOpen } from 'lucide-react';
 import { Translation } from '../../types';
 import { CabineMTResults } from '../../types/cabineMT';
+import { useApp } from '../../context/AppContext';
 
 interface ResultsPanelProps {
   t: Translation['cabineMT'];
@@ -21,12 +22,14 @@ interface ResultCardProps {
 }
 
 function ResultCard({ title, rawValue, normValue, unit, labelRaw, labelNorm, index }: ResultCardProps) {
+  const { moduleTheme } = useApp();
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.07, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-      className="bg-[#F5F5F5] dark:bg-white/5 border border-black/5 dark:border-white/10 p-4 group hover:border-[#81292C]/30 transition-all"
+      className="bg-[#F5F5F5] dark:bg-white/5 border border-black/5 dark:border-white/10 p-4 group transition-all"
+      style={{ '--hover-border-color': moduleTheme.accent } as React.CSSProperties}
     >
       <p className="text-[9px] font-black tracking-widest uppercase opacity-50 mb-3">{title}</p>
       <div className="grid grid-cols-2 gap-3">
@@ -41,7 +44,7 @@ function ResultCard({ title, rawValue, normValue, unit, labelRaw, labelNorm, ind
           <p className="text-[8px] font-bold opacity-30 tracking-widest uppercase mb-1">{labelNorm}</p>
           <p className="text-2xl font-black text-[#141414] dark:text-white font-mono tracking-tighter">
             {normValue}
-            <span className="text-[10px] font-bold ml-1 text-[#81292C]">{unit}</span>
+            <span className="text-[10px] font-bold ml-1" style={{ color: moduleTheme.accent }}>{unit}</span>
           </p>
         </div>
       </div>
@@ -50,10 +53,12 @@ function ResultCard({ title, rawValue, normValue, unit, labelRaw, labelNorm, ind
 }
 
 export function ResultsPanel({ t, results, isCalculating }: ResultsPanelProps) {
+  const { moduleTheme } = useApp();
+
   if (isCalculating) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-3 text-[#141414]/40 dark:text-white/40">
-        <div className="w-8 h-8 border-2 border-[#81292C] border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: moduleTheme.accent, borderTopColor: 'transparent' }} />
         <p className="text-[10px] font-bold uppercase tracking-widest">{t.calculating}</p>
       </div>
     );
@@ -62,8 +67,8 @@ export function ResultsPanel({ t, results, isCalculating }: ResultsPanelProps) {
   if (!results) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-8">
-        <div className="w-16 h-16 rounded-2xl bg-[#81292C]/10 flex items-center justify-center">
-          <AlertCircle size={28} className="text-[#81292C]/40" />
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${moduleTheme.accent}1A` }}>
+          <AlertCircle size={28} style={{ color: moduleTheme.accent, opacity: 0.4 }} />
         </div>
         <div>
           <p className="text-sm font-black uppercase tracking-tighter dark:text-white mb-2">
@@ -92,13 +97,13 @@ export function ResultsPanel({ t, results, isCalculating }: ResultsPanelProps) {
           transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
           className="bg-[#141414] dark:bg-white/10 text-white p-5 relative overflow-hidden"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-[#81292C]/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-br to-transparent" style={{ '--tw-gradient-from': `${moduleTheme.accent}4D` } as React.CSSProperties} />
           <div className="relative">
             <div className="flex items-start justify-between mb-4">
               <p className="text-[9px] font-black tracking-widest uppercase opacity-60">
                 {t.shortCircuitCurrent}
               </p>
-              <CheckCircle2 size={14} className="text-[#81292C] opacity-70 flex-shrink-0 mt-0.5" />
+              <CheckCircle2 size={14} className="opacity-70 flex-shrink-0 mt-0.5" style={{ color: moduleTheme.accent }} />
             </div>
             <p className="text-4xl font-black font-mono tracking-tighter">
               {results.shortCircuitCurrentA.toLocaleString('en-US', { maximumFractionDigits: 0 })}
@@ -151,14 +156,15 @@ export function ResultsPanel({ t, results, isCalculating }: ResultsPanelProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.35 }}
-          className="flex items-center gap-2 px-3 py-2 bg-[#81292C]/8 dark:bg-[#81292C]/10 border border-[#81292C]/15"
+          className="flex items-center gap-2 px-3 py-2 border"
+          style={{ backgroundColor: `${moduleTheme.accent}14`, borderColor: `${moduleTheme.accent}26` }}
         >
-          <BookOpen size={12} className="text-[#81292C] flex-shrink-0" />
+          <BookOpen size={12} className="flex-shrink-0" style={{ color: moduleTheme.accent }} />
           <div>
             <p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">
               {t.normativeReference}
             </p>
-            <p className="text-[9px] font-bold text-[#81292C]">{results.normativeReference}</p>
+            <p className="text-[9px] font-bold" style={{ color: moduleTheme.accent }}>{results.normativeReference}</p>
           </div>
         </motion.div>
       </motion.div>

@@ -4,6 +4,7 @@ import { Zap, ArrowLeft, FileDown, BookOpen } from 'lucide-react';
 import { Translation } from '../../types';
 import { CabineMTInputs, CabineMTResults } from '../../types/cabineMT';
 import { calculateCabineMT } from '../../utils/cabineMTCalculations';
+import { useApp } from '../../context/AppContext';
 
 interface InputPanelProps {
   t: Translation['cabineMT'];
@@ -13,9 +14,9 @@ interface InputPanelProps {
 
 const LABEL_CLASS = 'block text-[9px] font-bold opacity-40 tracking-widest uppercase mb-1.5';
 const INPUT_CLASS =
-  'w-full bg-[#efefef] dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-xs font-bold outline-none dark:text-white focus:border-[#81292C] transition-colors font-mono';
+  'w-full bg-[#efefef] dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-xs font-bold outline-none dark:text-white transition-colors font-mono focus:ring-1';
 const INPUT_ERROR_CLASS =
-  'w-full bg-[#efefef] dark:bg-white/5 border border-[#81292C] px-3 py-2 text-xs font-bold outline-none dark:text-white font-mono';
+  'w-full bg-[#efefef] dark:bg-white/5 border px-3 py-2 text-xs font-bold outline-none dark:text-white font-mono border-current border-2';
 
 function InputField({
   label,
@@ -30,6 +31,7 @@ function InputField({
   error?: string;
   children: React.ReactNode;
 }) {
+  const { moduleTheme } = useApp();
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
@@ -37,7 +39,7 @@ function InputField({
           {label}
           {unit && <span className="ml-1 opacity-60">({unit})</span>}
         </label>
-        {hint && <span className="text-[9px] text-[#81292C] font-bold tracking-widest">{hint}</span>}
+        {hint && <span className="text-[9px] font-bold tracking-widest" style={{ color: moduleTheme.accent }}>{hint}</span>}
       </div>
       {children}
       {error && (
@@ -46,7 +48,8 @@ function InputField({
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
-            className="text-[9px] text-[#81292C] font-bold"
+            className="text-[9px] font-bold"
+            style={{ color: moduleTheme.accent }}
           >
             {error}
           </motion.p>
@@ -57,6 +60,7 @@ function InputField({
 }
 
 export function InputPanel({ t, inputs, onChange }: InputPanelProps) {
+  const { moduleTheme } = useApp();
   const [errors, setErrors] = useState<Partial<Record<keyof CabineMTInputs, string>>>({});
 
   const validate = useCallback(

@@ -74,8 +74,7 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
     deleteProject,
     renameProject,
     updateInputs,
-    updateTransformers,
-    updateNumSwitchboardColumns,
+    updateElements,
     updateCabineDimensions,
     saveProject,
     loadProject,
@@ -413,11 +412,9 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                     lang={lang}
                     projectName={activeProject.name}
                     engineerName={user.name || user.email}
-                    transformers={activeProject.transformers}
-                    numSwitchboardColumns={activeProject.numSwitchboardColumns}
+                    elements={activeProject.elements}
                     dimensions={activeProject.cabineDimensions}
-                    onUpdateTransformers={updateTransformers}
-                    onUpdateNumSwitchboardColumns={updateNumSwitchboardColumns}
+                    onUpdateElements={updateElements}
                     onUpdateDimensions={updateCabineDimensions}
                   />
                 </motion.div>

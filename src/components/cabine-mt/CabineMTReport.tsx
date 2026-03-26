@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { X, Printer, CheckCircle2, BookOpen, Zap, AlertCircle } from 'lucide-react';
 import { CabineMTInputs, CabineMTResults } from '../../types/cabineMT';
 import { Translation } from '../../types';
+import { useApp } from '../../context/AppContext';
 
 interface CabineMTReportProps {
   inputs: CabineMTInputs;
@@ -29,6 +30,7 @@ const today = new Date().toLocaleDateString('it-IT', {
 
 // ─── Report ───────────────────────────────────────────────────────────────────
 export function CabineMTReport({ inputs, results, t, projectName, engineerName, onClose }: CabineMTReportProps) {
+  const { moduleTheme } = useApp();
   const iccSingle = (inputs.powerKVA * 1000) / (Math.sqrt(3) * inputs.secondaryVoltageV * (inputs.shortCircuitVoltagePct / 100));
   const iccTotal  = results.shortCircuitCurrentA;
   const sqrtT     = Math.sqrt(inputs.faultTimeS);
@@ -43,7 +45,7 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+        className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" style={{ "--theme-primary": moduleTheme.primary, "--theme-accent": moduleTheme.accent, "--theme-dark": moduleTheme.dark } as React.CSSProperties}
         onClick={onClose}
       >
         <motion.div
@@ -56,7 +58,7 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
           {/* Modal toolbar */}
           <div className="flex items-center justify-between px-6 py-3 bg-white dark:bg-[#141414] border-b border-black/5 dark:border-white/5 print:hidden flex-shrink-0">
             <div className="flex items-center gap-2">
-              <BookOpen size={16} className="text-[#81292C]" />
+              <BookOpen size={16} className="text-[color:var(--theme-accent)]" />
               <span className="text-[10px] font-black uppercase tracking-widest dark:text-white">
                 Relazione di Calcolo — Cabina MT
               </span>
@@ -64,7 +66,7 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
             <div className="flex items-center gap-2">
               <button
                 onClick={() => window.print()}
-                className="flex items-center gap-2 bg-[#81292C] text-white px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest hover:bg-[#6A2023] transition-colors"
+                className="flex items-center gap-2 bg-[color:var(--theme-accent)] text-white px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest hover:bg-[color:var(--theme-dark)] transition-colors"
               >
                 <Printer size={13} />
                 Stampa / PDF
@@ -83,15 +85,15 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
             <div className="py-12 px-16 text-[#1a1a1a] dark:text-white" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
 
               {/* ══ COPERTINA ═══════════════════════════════════════════════════ */}
-              <div className="border-b-4 border-[#81292C] pb-8 mb-10">
+              <div className="border-b-4 border-[color:var(--theme-accent)] pb-8 mb-10">
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="w-10 h-10 bg-[#401318] flex items-center justify-center">
+                      <div className="w-10 h-10 bg-[color:var(--theme-primary)] flex items-center justify-center">
                         <Zap size={20} className="text-white" />
                       </div>
                       <div>
-                        <p className="text-[9px] font-sans font-bold tracking-widest uppercase text-[#81292C]">
+                        <p className="text-[9px] font-sans font-bold tracking-widest uppercase text-[color:var(--theme-accent)]">
                           CablePro — Modulo Cabina MT
                         </p>
                         <p className="text-[9px] font-sans opacity-40 tracking-widest">
@@ -140,7 +142,7 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
               <Section title="2. Riferimenti Normativi" number="§2">
                 <table className="w-full text-[11px] border-collapse font-sans">
                   <thead>
-                    <tr className="bg-[#f8f0f0] dark:bg-[#81292C]/10 text-left">
+                    <tr className="bg-[#f8f0f0] dark:bg-[color:var(--theme-accent)]/10 text-left">
                       <th className="py-2 px-3 font-bold uppercase tracking-widest border border-black/10 dark:border-white/10">Norma</th>
                       <th className="py-2 px-3 font-bold uppercase tracking-widest border border-black/10 dark:border-white/10">Titolo</th>
                     </tr>
@@ -155,7 +157,7 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
                       ['IEC 60076-1', 'Trasformatori di potenza — Generalità'],
                     ].map(([norm, title]) => (
                       <tr key={norm} className="border-b border-black/5 dark:border-white/5">
-                        <td className="py-2 px-3 font-mono font-bold text-[10px] border border-black/10 dark:border-white/10 text-[#81292C] whitespace-nowrap">{norm}</td>
+                        <td className="py-2 px-3 font-mono font-bold text-[10px] border border-black/10 dark:border-white/10 text-[color:var(--theme-accent)] whitespace-nowrap">{norm}</td>
                         <td className="py-2 px-3 border border-black/10 dark:border-white/10 opacity-80">{title}</td>
                       </tr>
                     ))}
@@ -171,7 +173,7 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
                 </p>
                 <table className="w-full text-[11px] border-collapse font-sans">
                   <thead>
-                    <tr className="bg-[#f8f0f0] dark:bg-[#81292C]/10">
+                    <tr className="bg-[#f8f0f0] dark:bg-[color:var(--theme-accent)]/10">
                       <th className="py-2 px-3 font-bold uppercase tracking-widest text-left border border-black/10 dark:border-white/10">Parametro</th>
                       <th className="py-2 px-3 font-bold uppercase tracking-widest text-left border border-black/10 dark:border-white/10">Simbolo</th>
                       <th className="py-2 px-3 font-bold uppercase tracking-widest text-right border border-black/10 dark:border-white/10">Valore</th>
@@ -192,7 +194,7 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
                     ].map(([param, sym, val, unit]) => (
                       <tr key={param} className="border-b border-black/5 dark:border-white/5 hover:bg-black/2">
                         <td className="py-2 px-3 border border-black/10 dark:border-white/10 opacity-80">{param}</td>
-                        <td className="py-2 px-3 border border-black/10 dark:border-white/10 font-mono text-[10px] text-[#81292C]">{sym}</td>
+                        <td className="py-2 px-3 border border-black/10 dark:border-white/10 font-mono text-[10px] text-[color:var(--theme-accent)]">{sym}</td>
                         <td className="py-2 px-3 border border-black/10 dark:border-white/10 text-right font-bold font-mono">{val}</td>
                         <td className="py-2 px-3 border border-black/10 dark:border-white/10 opacity-60">{unit}</td>
                       </tr>
@@ -222,7 +224,7 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
                       ['k', 'Fattore dipendente dal materiale del conduttore e dall\'isolamento', '—'],
                     ].map(([sym, desc, unit]) => (
                       <tr key={sym} className="border-b border-black/5 dark:border-white/5">
-                        <td className="py-1.5 pr-4 font-mono font-bold text-[10px] text-[#81292C] w-8">{sym}</td>
+                        <td className="py-1.5 pr-4 font-mono font-bold text-[10px] text-[color:var(--theme-accent)] w-8">{sym}</td>
                         <td className="py-1.5 pr-4 opacity-80">{desc}</td>
                         <td className="py-1.5 font-mono text-[10px] opacity-50">{unit}</td>
                       </tr>
@@ -230,11 +232,11 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
                   </tbody>
                 </table>
 
-                <div className="bg-[#f8f0f0] dark:bg-[#81292C]/10 border border-[#81292C]/20 p-4 text-[11px] font-sans">
+                <div className="bg-[#f8f0f0] dark:bg-[color:var(--theme-accent)]/10 border border-[color:var(--theme-accent)]/20 p-4 text-[11px] font-sans">
                   <p className="font-bold mb-2">Fattore k adottato</p>
                   <p>
                     Per <strong>{material} con isolamento {insul}</strong>, si adotta:
-                    <span className="font-mono font-bold text-[#81292C] ml-2">k = {k}</span>
+                    <span className="font-mono font-bold text-[color:var(--theme-accent)] ml-2">k = {k}</span>
                     {' '}(CEI EN 60909 / IEC 60364-5-54, Tabella 43A — temperatura iniziale 90°C, temperatura finale 250°C)
                   </p>
                 </div>
@@ -359,11 +361,11 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
               <Section title="6. Riepilogo dei Risultati" number="§6">
                 <table className="w-full text-[11px] border-collapse font-sans">
                   <thead>
-                    <tr className="bg-[#401318] text-white">
-                      <th className="py-3 px-4 font-bold uppercase tracking-widest text-left border border-[#81292C]">Conduttore</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-widest text-right border border-[#81292C]">S calc. (mm²)</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-widest text-right border border-[#81292C]">S norm. (mm²)</th>
-                      <th className="py-3 px-4 font-bold uppercase tracking-widest text-left border border-[#81292C]">Norma</th>
+                    <tr className="bg-[color:var(--theme-primary)] text-white">
+                      <th className="py-3 px-4 font-bold uppercase tracking-widest text-left border border-[color:var(--theme-accent)]">Conduttore</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-widest text-right border border-[color:var(--theme-accent)]">S calc. (mm²)</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-widest text-right border border-[color:var(--theme-accent)]">S norm. (mm²)</th>
+                      <th className="py-3 px-4 font-bold uppercase tracking-widest text-left border border-[color:var(--theme-accent)]">Norma</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -372,10 +374,10 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
                       ['Collettore di Terra (busbar)', fmt4(results.collectorSectionRawMM2), results.collectorSectionNormMM2, 'IEC 60364-5-54, eq. 543.1'],
                       ['Bandella Equipotenz.', fmt4(results.bandellaSectionRawMM2), results.bandellaSectionNormMM2, 'CEI 11-37, Art. 8.2 (min. 16 mm²)'],
                     ].map(([cond, raw, norm, ref]) => (
-                      <tr key={cond as string} className="border-b border-black/10 dark:border-white/10 hover:bg-[#81292C]/5">
+                      <tr key={cond as string} className="border-b border-black/10 dark:border-white/10 hover:bg-[color:var(--theme-accent)]/5">
                         <td className="py-3 px-4 border border-black/10 dark:border-white/10 font-bold">{cond}</td>
                         <td className="py-3 px-4 border border-black/10 dark:border-white/10 text-right font-mono text-[10px] opacity-70">{raw}</td>
-                        <td className="py-3 px-4 border border-black/10 dark:border-white/10 text-right font-mono font-bold text-[#81292C] text-base">{norm}</td>
+                        <td className="py-3 px-4 border border-black/10 dark:border-white/10 text-right font-mono font-bold text-[color:var(--theme-accent)] text-base">{norm}</td>
                         <td className="py-3 px-4 border border-black/10 dark:border-white/10 text-[10px] opacity-60">{ref}</td>
                       </tr>
                     ))}
@@ -414,7 +416,7 @@ export function CabineMTReport({ inputs, results, t, projectName, engineerName, 
                   Le sezioni normalizzate adottate sono conformi alla norma IEC 60228 e rispettano
                   i minimi normativi previsti dalla CEI 11-37 per gli impianti di messa a terra.
                 </p>
-                <div className="bg-[#f8f0f0] dark:bg-[#81292C]/10 border-l-4 border-[#81292C] pl-4 py-3 font-sans text-[11px]">
+                <div className="bg-[#f8f0f0] dark:bg-[color:var(--theme-accent)]/10 border-l-4 border-[color:var(--theme-accent)] pl-4 py-3 font-sans text-[11px]">
                   <p className="font-bold mb-1">Sezioni adottate (valori di progetto):</p>
                   <ul className="space-y-1 opacity-80">
                     <li>• Cavo terra neutro trasformatore: <strong>{results.earthingCableSectionNormMM2} mm²</strong> {material} — {insul}</li>
@@ -467,7 +469,7 @@ function Section({ title, number, children }: { title: string; number: string; c
   return (
     <div className="mb-10">
       <div className="flex items-baseline gap-3 mb-4">
-        <span className="text-[9px] font-sans font-bold text-[#81292C] tracking-widest">{number}</span>
+        <span className="text-[9px] font-sans font-bold text-[color:var(--theme-accent)] tracking-widest">{number}</span>
         <h2 className="text-lg font-bold border-b border-black/10 dark:border-white/10 pb-1 flex-1">{title}</h2>
       </div>
       <div className="text-[12px] leading-relaxed">{children}</div>
@@ -478,7 +480,7 @@ function Section({ title, number, children }: { title: string; number: string; c
 function SubSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mb-7">
-      <h3 className="font-bold text-[13px] mb-3 text-[#401318] dark:text-[#c97b7b]">{title}</h3>
+      <h3 className="font-bold text-[13px] mb-3 text-[color:var(--theme-primary)] dark:text-[#c97b7b]">{title}</h3>
       {children}
     </div>
   );
@@ -509,8 +511,8 @@ function CalcStep({ label, lines, result, normalized, warning }: {
           <p key={i} className={i === lines.length - 1 ? '' : 'opacity-60'}>{line}</p>
         ))}
       </div>
-      <div className={`px-4 py-3 border-t ${warning ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-700' : 'bg-[#f8f0f0] dark:bg-[#81292C]/10 border-[#81292C]/20'} flex items-center justify-between`}>
-        <p className="font-mono font-bold text-[13px] text-[#81292C]">→ {result}</p>
+      <div className={`px-4 py-3 border-t ${warning ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-700' : 'bg-[#f8f0f0] dark:bg-[color:var(--theme-accent)]/10 border-[color:var(--theme-accent)]/20'} flex items-center justify-between`}>
+        <p className="font-mono font-bold text-[13px] text-[color:var(--theme-accent)]">→ {result}</p>
         {normalized && (
           <div className="flex items-center gap-1.5">
             {warning ? <AlertCircle size={13} className="text-amber-600" /> : <CheckCircle2 size={13} className="text-emerald-500" />}
