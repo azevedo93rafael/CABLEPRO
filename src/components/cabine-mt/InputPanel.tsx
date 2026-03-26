@@ -220,11 +220,12 @@ export function InputPanel({ t, inputs, onChange }: InputPanelProps) {
                 id={`cmt-material-${mat}`}
                 type="button"
                 onClick={() => handleChange('conductorMaterial', mat)}
-                className={`flex-1 py-2 text-[9px] font-bold uppercase tracking-widest border transition-all ${
+                className="flex-1 py-2 text-[9px] font-bold uppercase tracking-widest border transition-all"
+                style={
                   inputs.conductorMaterial === mat
-                    ? 'bg-[#81292C] text-white border-[#81292C]'
-                    : 'bg-transparent text-[#5a5a5a] border-black/10 dark:text-white/60 dark:border-white/10 hover:border-[#81292C]/40'
-                }`}
+                    ? { backgroundColor: moduleTheme.accent, borderColor: moduleTheme.accent, color: '#fff' }
+                    : { backgroundColor: 'transparent', borderColor: 'var(--tw-border-opacity, rgba(0,0,0,0.1))', color: 'inherit' }
+                }
               >
                 {mat === 'copper' ? t.copper : t.aluminum}
               </button>
