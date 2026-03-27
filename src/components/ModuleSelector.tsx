@@ -61,12 +61,9 @@ function getLaunchLabel(lang: string) {
 export function ModuleSelector({
   onSelect,
   t,
-  allowedModules = ['cablefill', 'capitolato'],
+  allowedModules = ['cablefill', 'capitolato', 'cabine-mt'],
 }: ModuleSelectorProps) {
-  // Infer language from t.selector keys— simpler: detect from document or pass lang
-  // We can detect from 'enter' key value in translation
   const lang = t.selector.enter === 'Accedi' ? 'it' : t.selector.enter === 'Enter' ? 'en' : 'pt-BR';
-
   const visible = MODULE_CONFIG.filter((m) => allowedModules.includes(m.id));
 
   const getDesc = (mod: typeof MODULE_CONFIG[0]) => {
@@ -82,91 +79,104 @@ export function ModuleSelector({
   const launchLabel = getLaunchLabel(lang);
 
   return (
-    <div className="min-h-screen bg-[#f0f0f0] dark:bg-[#0a0a0a] flex flex-col items-center justify-center p-8 transition-colors">
+    <div className="min-h-screen bg-midnight text-midnight-text flex flex-col items-center justify-center p-8 transition-colors overflow-hidden relative">
+      
+      {/* ── Ambient Background Elements ── */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <motion.div
-        initial={{ opacity: 0, y: -16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-        className="text-center mb-14"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
+        className="text-center mb-16 relative z-10"
       >
-        <p className="text-[10px] font-black tracking-[0.3em] uppercase text-black/30 dark:text-white/30 mb-3">
-          RILO ELETTRICO — ENGINEERING SOFTWARE
+        <p className="text-[10px] font-black tracking-[0.4em] uppercase text-white/40 mb-4 font-outfit">
+          RILO ELETTRICO • ENGINEERING PLATFORM
         </p>
-        <h1 className="text-4xl font-bold text-[#141414] dark:text-white tracking-tight mb-3">
+        <h1 className="text-5xl md:text-6xl font-display font-bold text-white tracking-tight mb-4 drop-shadow-2xl">
           {t.selector.chooseModule}
         </h1>
-        <div className="w-12 h-1 mx-auto rounded-full bg-black/10 dark:bg-white/10" />
+        <div className="w-20 h-0.5 mx-auto rounded-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
       </motion.div>
 
-      {/* ── Cards ───────────────────────────────────────────────────────────── */}
+      {/* ── Cards Container ─────────────────────────────────────────────────── */}
       <div
-        className={`grid gap-6 w-full ${
+        className={`grid gap-8 w-full relative z-10 ${
           visible.length === 1
-            ? 'max-w-sm mx-auto'
+            ? 'max-w-md mx-auto'
             : visible.length === 2
-            ? 'md:grid-cols-2 max-w-2xl mx-auto'
-            : 'md:grid-cols-3 max-w-5xl mx-auto'
+            ? 'md:grid-cols-2 max-w-4xl mx-auto'
+            : 'lg:grid-cols-3 max-w-6xl mx-auto'
         }`}
       >
         {visible.map((mod, i) => {
           const Icon = mod.icon;
           const { primary, accent } = mod.theme;
           const features = getFeatures(mod);
+          
+          // Stagger effect: middle card is slightly higher on large screens
+          const isMiddle = i === 1 && visible.length === 3;
 
           return (
             <motion.div
               key={mod.id}
-              initial={{ opacity: 0, y: 28 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1, duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: isMiddle ? -12 : 0 }}
+              transition={{ 
+                delay: i * 0.15, 
+                duration: 0.8, 
+                ease: [0.23, 1, 0.32, 1],
+                y: { duration: 1.2 } 
+              }}
+              whileHover={{ y: isMiddle ? -24 : -12 }}
+              className="flex flex-col h-full"
             >
-              <div className="group bg-white dark:bg-[#141414] rounded-2xl border border-black/8 dark:border-white/5 shadow-lg shadow-black/5 overflow-hidden flex flex-col h-full hover:shadow-xl hover:shadow-black/10 transition-all duration-300">
+              <div className="group relative bg-[#1A1A1A]/40 backdrop-blur-xl rounded-[2rem] border border-white/5 overflow-hidden flex flex-col h-full transition-all duration-500 hover:border-white/20 hover:bg-[#1A1A1A]/60 shadow-2xl">
+                
+                {/* Accent Glow Top Right */}
+                <div 
+                  className="absolute -top-12 -right-12 w-32 h-32 blur-3xl opacity-0 group-hover:opacity-20 transition-opacity duration-700"
+                  style={{ backgroundColor: accent }}
+                />
 
                 {/* Top section */}
-                <div className="p-8 flex-1">
-                  {/* Icon + decorative element */}
-                  <div className="flex items-start justify-between mb-7">
+                <div className="p-10 flex-1 relative z-10">
+                  <div className="flex items-start justify-between mb-10">
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-md transition-transform duration-300 group-hover:scale-110"
-                      style={{ backgroundColor: accent }}
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center text-white shadow-2xl transition-all duration-500 group-hover:rotate-6 group-hover:scale-110"
+                      style={{ 
+                        background: `linear-gradient(135deg, ${accent}, ${primary})`,
+                        boxShadow: `0 8px 24px ${accent}40`
+                      }}
                     >
-                      <Icon size={22} />
+                      <Icon size={26} strokeWidth={1.5} />
                     </div>
-                    {/* Decorative square — lighter accent */}
-                    <div
-                      className="w-10 h-10 rounded-lg opacity-15"
-                      style={{ backgroundColor: accent }}
-                    />
+                    
+                    <div className="text-[10px] font-bold font-outfit text-white/20 group-hover:text-white/40 transition-colors">
+                      ID: {mod.id.toUpperCase()}
+                    </div>
                   </div>
 
-                  {/* Title */}
-                  <h2 className="text-[22px] font-bold text-[#141414] dark:text-white mb-3 leading-tight">
+                  <h2 className="text-3xl font-display font-bold text-white mb-4 leading-tight">
                     {mod.title}
                   </h2>
 
-                  {/* Description */}
-                  <p className="text-[13px] text-black/50 dark:text-white/50 leading-relaxed mb-6">
+                  <p className="text-[14px] font-sans text-white/50 leading-relaxed mb-8 group-hover:text-white/70 transition-colors">
                     {getDesc(mod)}
                   </p>
 
-                  {/* Feature bullets */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {features.map((feat) => (
-                      <div key={feat} className="flex items-center gap-2">
+                      <div key={feat} className="flex items-center gap-3">
                         <div
-                          className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: `${accent}18` }}
+                          className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-white/5 border border-white/10 group-hover:border-white/20 transition-all"
                         >
-                          <div
-                            className="w-1.5 h-1.5 rounded-full"
-                            style={{ backgroundColor: accent }}
-                          />
+                          <CheckCircle2 size={12} style={{ color: accent }} />
                         </div>
                         <span
-                          className="text-[10px] font-bold tracking-widest uppercase"
-                          style={{ color: accent }}
+                          className="text-[11px] font-bold tracking-[0.15em] uppercase text-white/60 group-hover:text-white/90 font-outfit"
                         >
                           {feat}
                         </span>
@@ -175,20 +185,25 @@ export function ModuleSelector({
                   </div>
                 </div>
 
-                {/* Launch button */}
-                <div className="px-8 pb-8">
+                {/* Launch button area */}
+                <div className="px-10 pb-10 relative z-10">
                   <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.97 }}
+                    whileHover={{ scale: 1.02, x: 2 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => onSelect(mod.id)}
-                    className="w-full flex items-center justify-center gap-3 py-3.5 text-white text-[11px] font-black tracking-widest uppercase rounded-xl transition-all duration-200 hover:opacity-90 shadow-lg"
+                    className="w-full group/btn flex items-center justify-between pl-6 pr-5 py-4 text-white text-[12px] font-black tracking-widest uppercase rounded-2xl transition-all duration-300 relative overflow-hidden"
                     style={{
-                      backgroundColor: primary,
-                      boxShadow: `0 4px 20px ${primary}40`,
+                      background: `linear-gradient(135deg, ${primary}, ${accent})`,
+                      boxShadow: `0 10px 30px ${primary}40`,
                     }}
                   >
-                    <span>{launchLabel}</span>
-                    <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
+                    <span className="relative z-10">{launchLabel}</span>
+                    <div className="relative z-10 w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center group-hover/btn:bg-white/20 transition-colors">
+                      <ArrowRight size={18} className="group-hover/btn:translate-x-0.5 transition-transform" />
+                    </div>
+                    
+                    {/* Hover Shine Effect */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000" />
                   </motion.button>
                 </div>
               </div>
@@ -198,14 +213,14 @@ export function ModuleSelector({
       </div>
 
       {/* Footer */}
-      <motion.p
+      <motion.footer
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="mt-12 text-[10px] font-bold tracking-widest uppercase text-black/20 dark:text-white/20"
+        transition={{ delay: 1, duration: 1 }}
+        className="mt-16 text-[10px] font-bold tracking-[0.5em] uppercase text-white/20 relative z-10 font-outfit"
       >
-        Rilo Elettrico · Engineering Platform
-      </motion.p>
+        RILO ELETTRICO SYSTEM • 2025 EDITION
+      </motion.footer>
     </div>
   );
 }
