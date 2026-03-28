@@ -420,102 +420,73 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
   const generateDocxBlob = async (): Promise<Blob | null> => {
     if (!templateFile) return null;
 
-    const reader = new FileReader();
-    const fileBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-      reader.onload = () => resolve(reader.result as ArrayBuffer);
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(templateFile);
-    });
-
-    const zip = new PizZip(fileBuffer);
-    const opts: any = {};
-    opts.centered = false;
-    opts.getImage = (tagValue: string) => {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement("canvas");
-          canvas.width = img.width;
-          canvas.height = img.height;
-          const ctx = canvas.getContext("2d");
-          ctx?.drawImage(img, 0, 0);
-          canvas.toBlob((blob) => {
-            if (blob) {
-              blob.arrayBuffer().then(resolve);
-            } else {
-              reject("Could not create blob");
-            }
-          }, "image/png");
-        };
-        img.onerror = reject;
-        img.crossOrigin = "Anonymous";
-        img.src = tagValue;
-      });
-    };
-    opts.getSize = (img: any) => [300, 300];
-
-    const imageModule = new ImageModule(opts);
-    const doc = new Docxtemplater(zip, {
-      modules: [imageModule],
-      paragraphLoop: true,
-      linebreaks: true,
-    });
-
-    const hasChapters = documentStructure.some(i => i.type === 'chapter');
-    const elementsMapped = documentStructure.map((item, idx) => {
+    // Constrói lista de voci para o backend
+    const voci_capitolato = documentStructure.map((item, idx) => {
       if (item.type === 'chapter') {
         return {
-          isChapter: true,
-          isElement: false,
-          title: item.title,
-          heading_level: 1, // Heading 1 for chapters
-          index: idx + 1
+           includi: true,
+           titolo: item.title,
         };
       } else {
         const mat = materials.find(m => m.id === item.elementId);
+        // Tentar formatar características técnicas
+        let parsedCarat = [{ nome: "Dettaglio", valore: mat?.caratteristiche_tecniche || "-" }];
+        try {
+          if (mat?.caratteristiche_tecniche && mat.caratteristiche_tecniche.trim().startsWith('[')) {
+             parsedCarat = JSON.parse(mat.caratteristiche_tecniche);
+          }
+        } catch(e){}
+
         return {
-          isChapter: false,
-          isElement: true,
-          title: item.title || mat?.titolo || 'Titolo Elemento',
-          heading_level: hasChapters ? 2 : 1, // Heading 2 if in chapter, else 1
-          index: idx + 1,
-          name: mat?.titolo || item.title,
-          brand: mat?.marca || '',
-          description: mat?.descrizione || '',
-          image: mat?.image || "",
-          has_image: !!mat?.image,
-          has_description: !!mat?.descrizione,
-          has_brand: !!mat?.marca,
+          includi: true,
+          titolo: mat?.titolo || item.title || 'Senza Titolo',
+          riferimento_normativo: mat?.riferimenti_normativi || "",
+          descrizione: mat?.descrizione || "",
+          caratteristiche_tecniche: parsedCarat,
           caratteristiche_dimensionali: mat?.caratteristiche_dimensionali || "",
-          riferimenti_normativi: mat?.riferimenti_normativi || "",
-          caratteristiche_tecniche: mat?.caratteristiche_tecniche || "",
           tipo_impiego: mat?.tipo_impiego || "",
+          documentazione: mat?.documentazione || "",
+          image: mat?.image || "",
           modalita_installazione: mat?.modalita_installazione || "",
           controlli_collaudi: mat?.controlli_collaudi || "",
-          documentazione: mat?.documentazione || "",
-          has_dim: !!(mat?.caratteristiche_dimensionali),
-          has_norm: !!(mat?.riferimenti_normativi),
-          has_tech: !!(mat?.caratteristiche_tecniche),
-          has_imp: !!(mat?.tipo_impiego),
-          has_inst: !!(mat?.modalita_installazione),
-          has_col: !!(mat?.controlli_collaudi),
-          has_doc: !!(mat?.documentazione)
+          marche_riferimento: mat?.marca || "o SIMILE",
         };
       }
     });
 
+    // Mapeamento esperado pelo Python Jinja prompt
     const injectionData = {
-      ...metadata,
-      premise: docPremise,
-      elementi: elementsMapped
+      nome_progetto: metadata.project_title || docTitle,
+      cliente: metadata.client || clientName,
+      codice_progetto: metadata.project_address || "Cód",
+      revisione: metadata.revisione || "00",
+      data_revisione: metadata.data || docDate,
+      sottotitolo_1: metadata.project_description || "",
+      sottotitolo_2: docTitle,
+      titolo_documento: metadata.document_title || "Capitolato Tecnico",
+      disciplina: metadata.disciplina || "ELE",
+      eseguito: metadata.eseguito || docIssuer,
+      verificato: metadata.verificato || "",
+      approvato: metadata.approvato || "",
+      data_generazione: new Date().toLocaleString(),
+      voci_capitolato: voci_capitolato
     };
 
-    doc.render(injectionData);
+    const formData = new FormData();
+    formData.append('template', templateFile);
+    formData.append('dati', JSON.stringify(injectionData));
 
-    return doc.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    const response = await fetch('http://localhost:8000/api/generate', {
+      method: 'POST',
+      body: formData
     });
+
+    if (!response.ok) {
+       const errBody = await response.text();
+       throw new Error(`API Error: ${response.status} - ${errBody}`);
+    }
+
+    return await response.blob();
   };
 
   const handleGeneratePreview = async () => {
@@ -619,6 +590,16 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
           </div>
         </div>
 
+        <div className="px-6 py-4 border-b border-white/10">
+          <button 
+            onClick={onBack}
+            className="w-full flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-[10px] font-bold uppercase tracking-widest"
+          >
+            <ChevronLeft size={14} />
+            Torna al Selettore
+          </button>
+        </div>
+
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           <p className="px-4 text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4">PRINCIPALE</p>
           
@@ -663,49 +644,23 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
               </button>
             )}
 
-            <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
-              <p className="px-4 text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4">PREFERENZE</p>
-              
-              <div className="px-4 flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3 opacity-60">
-                  <Globe size={18} />
-                  <span className="text-sm font-medium">Idioma</span>
-                </div>
-                <select 
-                  value={lang}
-                  onChange={(e) => setLang(e.target.value as Language)}
-                  className="bg-white/10 border-none rounded-lg text-xs py-1 px-2 focus:ring-0 cursor-pointer"
-                >
-                  <option value="it" className="text-black">🇮🇹 ITA</option>
-                  <option value="en" className="text-black">🇬🇧 ENG</option>
-                  <option value="pt" className="text-black">🇧🇷 POR</option>
-                </select>
-              </div>
-
-              <button 
-                onClick={() => setDarkMode(!darkMode)}
-                className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-white/5 opacity-60 hover:opacity-100 transition-all"
-              >
-                <div className="flex items-center gap-3">
-                  {darkMode ? <Moon size={18} /> : <Sun size={18} />}
-                  <span className="text-sm font-medium">{darkMode ? 'Modo Chiaro' : 'Modo Scuro'}</span>
-                </div>
-                <div className={`w-10 h-6 rounded-full relative transition-all ${darkMode ? 'bg-blue-500' : 'bg-white/20'}`}>
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${darkMode ? 'right-1' : 'left-1'}`} />
-                </div>
-              </button>
-            </div>
           </div>
         </nav>
 
-        <div className="p-4 border-t border-white/10">
-          <button 
-            onClick={onBack}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm font-medium"
-          >
-            <ArrowLeft size={18} />
-            Torna al Selettore
-          </button>
+        <div className="p-6 border-t border-white/10 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 bg-white/10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden">
+              <div
+              className="w-full h-full flex items-center justify-center text-white font-bold uppercase"
+              style={{ backgroundColor: moduleTheme.accent }}
+            >
+                {(user?.email || 'U').charAt(0)}
+              </div>
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold leading-tight uppercase truncate">{user?.email}</p>
+            </div>
+          </div>
         </div>
       </aside>
 
@@ -726,7 +681,38 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
             </h2>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-6">
+            <button 
+              onClick={() => setDarkMode(!darkMode)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 transition-all shadow-sm"
+              title={darkMode ? 'Modo Claro' : 'Modo Escuro'}
+            >
+              {darkMode ? (
+                <>
+                  <Sun size={14} className="text-yellow-400" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider">Light</span>
+                </>
+              ) : (
+                <>
+                  <Moon size={14} className="opacity-60" />
+                  <span className="text-[9px] font-bold uppercase tracking-wider">Dark</span>
+                </>
+              )}
+            </button>
+            
+            <div className="flex items-center gap-2">
+              <Globe size={16} className="opacity-40" />
+              <select 
+                value={lang} 
+                onChange={(e) => setLang(e.target.value as Language)}
+                className="text-[10px] font-bold bg-transparent border-none outline-none cursor-pointer uppercase"
+              >
+                <option value="pt-BR" className="dark:bg-[#141414]">PT-BR</option>
+                <option value="en" className="dark:bg-[#141414]">EN</option>
+                <option value="it" className="dark:bg-[#141414]">IT</option>
+              </select>
+            </div>
+
             {activeView === 'editor' && (
               <>
                 <button 

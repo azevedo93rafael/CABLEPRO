@@ -1,0 +1,150 @@
+[
+  {
+    "id": "cavo_fg16m16",
+    "codice": "3.2.1",
+    "titolo": "Cavo bt tipo fg16m(O)16",
+    "riferimento_normativo": "CEI 20-38, CEI 20-45, EN 50575",
+    "descrizione": "CAVI PER ENERGIA E SEGNALAZIONI (HEPR G16, LSZH, CPR Cca-s1b,d1,a1)",
+    "caratteristiche_tecniche": [
+      { "nome": "Tensione nominale U0", "valore": "600V" },
+      { "nome": "Tensione nominale U", "valore": "1000V" },
+      { "nome": "Temperatura max esercizio", "valore": "90°C" },
+      { "nome": "CPR", "valore": "Cca-s1b,d1,a1" }
+    ],
+    "modalita_installazione": "In accordo alle istruzioni del costruttore...",
+    "controlli_collaudi": "Verifiche non strumentali...",
+    "marche_riferimento": "GENERAL CAVI - ARISTON CAVI \u2013 PIRELLI o SIMILE",
+    "includi": false
+  },
+  {
+    "id": "cavo_fg17",
+    "codice": "3.2.2",
+    "titolo": "Cavo bt tipo FG17",
+    "riferimento_normativo": "EN 50525-2-31",
+    "descrizione": "CAVI PER ENERGIA E SEGNALAZIONI (PVC S17, 450/750V, CPR Cca-s3,d1,a3)",
+    "caratteristiche_tecniche": [
+      { "nome": "Tensione nominale U0", "valore": "450V" },
+      { "nome": "Tensione nominale U", "valore": "750V" },
+      { "nome": "Temperatura max esercizio", "valore": "70°C" },
+      { "nome": "CPR", "valore": "Cca-s3,d1,a3" }
+    ],
+    "modalita_installazione": "In accordo alle istruzioni del costruttore...",
+    "controlli_collaudi": "Verifiche non strumentali...",
+    "marche_riferimento": "GENERAL CAVI \u2013 BALDASSARI o SIMILE",
+    "includi": false
+  },
+  {
+    "id": "interruttori_bt_modulari",
+    "codice": "3.2.3",
+    "titolo": "Interruttori BT modulari",
+    "riferimento_normativo": "CEI EN 60898, CEI EN 60947-2",
+    "descrizione": "Interruttori magnetotermici e differenziali modulari per applicazioni civili e industriali (0.5-125A).",
+    "caratteristiche_tecniche": [
+      { "nome": "Tensione nominale", "valore": "400V" },
+      { "nome": "Corrente nominale (In)", "valore": "0.5A \u00f7 125A" },
+      { "nome": "Potere di interruzione", "valore": "4500A \u00f7 10000A" }
+    ],
+    "modalita_installazione": "Fissaggio su guida DIN EN 60715...",
+    "controlli_collaudi": "Prove d'intervento differenziale...",
+    "marche_riferimento": "SCHNEIDER - ABB - BTICINO o SIMILE",
+    "includi": false
+  },
+  {
+    "id": "tubo_rigido_isolante",
+    "codice": "3.2.4",
+    "titolo": "Tubo protettivo rigido PVC",
+    "riferimento_normativo": "CEI EN 61386",
+    "descrizione": "Tubo rigido in materiale termoplastico isolante a base di PVC.",
+    "caratteristiche_tecniche": [
+      { "nome": "Resistenza alla compressione", "valore": "\u2265 750N (Pesante)" },
+      { "nome": "Temperatura d'impiego", "valore": "-5°C / +60°C" },
+      { "nome": "Glow wire test", "valore": "850°C" }
+    ],
+    "modalita_installazione": "Fissaggio mediante collari a scatto...",
+    "controlli_collaudi": "Verifica continuit\u00e0 dei percorsi...",
+    "marche_riferimento": "GEWISS - LEGRAND o SIMILE",
+    "includi": false
+  },
+  {
+    "id": "guaina_spiralata",
+    "codice": "3.2.5",
+    "titolo": "Guaina guidacavo spiralata PVC",
+    "riferimento_normativo": "CEI EN 61386-23",
+    "descrizione": "Guaina spiralata flessibile ad alta protezione meccanica.",
+    "caratteristiche_tecniche": [
+      { "nome": "Grado di protezione", "valore": "IP64 \u00f7 IP65" },
+      { "nome": "Resistenza compressione", "valore": "\u2265 320N/5cm" },
+      { "nome": "Autoestinguenza", "valore": "S\u00ec, autoestinguente" }
+    ],
+    "modalita_installazione": "A vista con raccordi pressacavo dedicati...",
+    "controlli_collaudi": "Verifica serraggio ghiere...",
+    "marche_riferimento": "BOCCHIOTTI - LEGRAND o SIMILE",
+    "includi": false
+  },
+  {
+    "id": "cassetta_derivazione",
+    "codice": "3.2.6",
+    "titolo": "Cassetta derivazione PVC a vista",
+    "riferimento_normativo": "CEI EN 60670",
+    "descrizione": "Cassette di derivazione da parete in tecnopolimero per montaggio a vista.",
+    "caratteristiche_tecniche": [
+      { "nome": "Grado di protezione", "valore": "IP40/IP55" },
+      { "nome": "Accessori", "valore": "Viti inox, setti separatori separati" },
+      { "nome": "Isolamento", "valore": "Completo (Classe II)" }
+    ],
+    "modalita_installazione": "Posa a vista con staffe o tasselli...",
+    "controlli_collaudi": "Verifica ispezionabilit\u00e0...",
+    "marche_riferimento": "GEWISS - BTICINO o SIMILE",
+    "includi": false
+  },
+  {
+    "id": "prese_civile",
+    "codice": "3.2.7",
+    "titolo": "Prese a spina tipo civile",
+    "riferimento_normativo": "CEI 23-50",
+    "descrizione": "Frutti presa per la distribuzione di energia di tipo civile e dati/segnali (P11/P17/P30/Schuko/USB/HDMI/RJ45).",
+    "caratteristiche_tecniche": [
+      { "nome": "Tensione e Corrente", "valore": "250V AC - 16A" },
+      { "nome": "Tipi disponibili", "valore": "Bipasso, Schuko standard italo-tedesco" },
+      { "nome": "Grado IP", "valore": "IP20 (IP40 o \u2265 con coperchi idonei)" }
+    ],
+    "modalita_installazione": "Installate in telai per scatole 503/504...",
+    "controlli_collaudi": "Verifica inserimento spina, misure anello di guasto...",
+    "marche_riferimento": "BTICINO LIVING - VIMAR o SIMILE",
+    "includi": false
+  },
+  {
+    "id": "cavo_utp_cat6a",
+    "codice": "3.2.8",
+    "titolo": "Cavo U/FTP cat 6a",
+    "riferimento_normativo": "ISO/IEC 11801, EN 50173",
+    "descrizione": "Cavo dati a coppie twistate con schermatura globale (U/FTP) in Cat. 6a.",
+    "caratteristiche_tecniche": [
+      { "nome": "Guaina esterna", "valore": "LSZH" },
+      { "nome": "Conduttore", "valore": "AWG23 in rame nudo massiccio" },
+      { "nome": "Velocit\u00e0/Frequenza", "valore": "10GBASE-T, \u2265 500MHz" },
+      { "nome": "Supporto energia", "valore": "PoE, PoE+, PoE++" },
+      { "nome": "CPR", "valore": "Cca-s1,d1,a1" }
+    ],
+    "modalita_installazione": "Infrastruttura di posa dati senza rottura schermo...",
+    "controlli_collaudi": "Certificazione strumentale link Channel a 500MHz...",
+    "marche_riferimento": "SCHNEIDER - PANDUIT o SIMILE",
+    "includi": false
+  },
+  {
+    "id": "connettore_rj45_cat6a",
+    "codice": "3.2.9",
+    "titolo": "Connettore RJ45 cat 6a",
+    "riferimento_normativo": "ISO/IEC 11801, EIA/TIA 568",
+    "descrizione": "Connettori di tipo keystone presa RJ45 Cat. 6a schermata.",
+    "caratteristiche_tecniche": [
+      { "nome": "Schermatura", "valore": "A 360° shield integrale" },
+      { "nome": "Terminazione", "valore": "Tool-less (IDC senza attrezzi)" },
+      { "nome": "Banda passante", "valore": "0 \u00f7 550MHz" }
+    ],
+    "modalita_installazione": "Montaggio corretto sul patch panel o in presa scatola modulo...",
+    "controlli_collaudi": "Analisi Next/Return Loss tramite analizzatore LAN...",
+    "marche_riferimento": "PANDUIT - SCHNEIDER o SIMILE",
+    "includi": false
+  }
+]

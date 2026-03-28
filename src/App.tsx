@@ -21,7 +21,7 @@ import { ShortcutsModal } from './components/ShortcutsModal';
 
 export default function App() {
   const { user, setUser, isSessionVerified } = useAuth();
-  const { lang, darkMode, activeTab, activeModule, setActiveModule, toastData, showToast } = useApp();
+  const { lang, setLang, darkMode, activeTab, activeModule, setActiveModule, toastData, showToast } = useApp();
   const { customCables, customStructures } = useDatabase();
   
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -47,7 +47,7 @@ export default function App() {
   if (!activeModule) {
     const ALL_MODULES = ['cablefill', 'capitolato', 'cabine-mt'];
     const allowedModules = user.role === 'admin' ? ALL_MODULES : (user.accessible_modules || []);
-    return <ModuleSelector onSelect={setActiveModule} t={TRANSLATIONS[lang]} allowedModules={allowedModules} />;
+    return <ModuleSelector onSelect={setActiveModule} t={TRANSLATIONS[lang]} lang={lang} setLang={setLang} allowedModules={allowedModules} />;
   }
 
   // Capitolato has its own full-screen layout – render it outside MainLayout

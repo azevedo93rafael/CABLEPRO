@@ -1,12 +1,14 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Layers, FileText, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { Translation } from '../types';
+import { Layers, FileText, Zap, ArrowRight, CheckCircle2, Globe } from 'lucide-react';
+import { Translation, Language } from '../types';
 import { MODULE_THEMES } from '../config/moduleThemes';
 
 interface ModuleSelectorProps {
   onSelect: (module: 'cablefill' | 'capitolato' | 'cabine-mt') => void;
   t: Translation;
+  lang: Language;
+  setLang: (lang: Language) => void;
   allowedModules?: string[];
 }
 
@@ -61,9 +63,10 @@ function getLaunchLabel(lang: string) {
 export function ModuleSelector({
   onSelect,
   t,
+  lang,
+  setLang,
   allowedModules = ['cablefill', 'capitolato', 'cabine-mt'],
 }: ModuleSelectorProps) {
-  const lang = t.selector.enter === 'Accedi' ? 'it' : t.selector.enter === 'Enter' ? 'en' : 'pt-BR';
   const visible = MODULE_CONFIG.filter((m) => allowedModules.includes(m.id));
 
   const getDesc = (mod: typeof MODULE_CONFIG[0]) => {
@@ -78,12 +81,36 @@ export function ModuleSelector({
 
   const launchLabel = getLaunchLabel(lang);
 
+  const languages: { code: Language; label: string }[] = [
+    { code: 'it', label: 'IT' },
+    { code: 'pt-BR', label: 'PT' },
+    { code: 'en', label: 'EN' },
+  ];
+
   return (
     <div className="min-h-screen bg-midnight text-midnight-text flex flex-col items-center justify-center p-8 transition-colors overflow-hidden relative">
       
       {/* ── Ambient Background Elements ── */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
+
+      {/* ── Language Switcher ───────────────────────────────────────────────── */}
+      <div className="absolute top-6 right-6 z-50 flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full p-1">
+        <Globe size={14} className="text-white/40 ml-2" />
+        {languages.map((langOption) => (
+          <button
+            key={langOption.code}
+            onClick={() => setLang(langOption.code)}
+            className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all ${
+              lang === langOption.code
+                ? 'bg-[#81292C] text-white'
+                : 'text-white/40 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            {langOption.label}
+          </button>
+        ))}
+      </div>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <motion.div
@@ -152,10 +179,6 @@ export function ModuleSelector({
                       }}
                     >
                       <Icon size={26} strokeWidth={1.5} />
-                    </div>
-                    
-                    <div className="text-[10px] font-bold font-outfit text-white/20 group-hover:text-white/40 transition-colors">
-                      ID: {mod.id.toUpperCase()}
                     </div>
                   </div>
 

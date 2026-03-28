@@ -1,0 +1,37 @@
+{
+  "nome_progetto": "Edifici in Via Roma N.1 (ROMA)",
+  "cliente": "Nome Cliente S.p.A.",
+  "codice_progetto": "150GE-E-IE-ZZ-101",
+  "revisione": "00",
+  "data_revisione": "28/03/2026",
+  "sottotitolo_1": "RIQUALIFICAZIONE DELL'IMMOBILE IN VIA ROMA N.1,",
+  "sottotitolo_2": "VIA ROMA N.1 - ROMA",
+  "titolo_documento": "Capitolato tecnico \u2013 Zone Comuni",
+  "disciplina": "ELE",
+  "eseguito": "FP",
+  "verificato": "FP",
+  "approvato": "DDC",
+  "data_generazione": "28/03/2026 14:30",
+  "voci_capitolato": [
+    {
+      "id": "cavo_fg16m16",
+      "includi": true
+    },
+    {
+      "id": "cavo_fg17",
+      "includi": false
+    },
+    {
+      "id": "interruttori_bt_modulari",
+      "includi": true
+    },
+    {
+      "id": "cavo_utp_cat6a",
+      "includi": true
+    },
+    {
+      "id": "connettore_rj45_cat6a",
+      "includi": true
+    }
+  ]
+}
