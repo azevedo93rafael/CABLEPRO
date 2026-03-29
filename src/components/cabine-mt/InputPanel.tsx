@@ -92,7 +92,7 @@ export function InputPanel({ t, inputs, onChange }: InputPanelProps) {
       <div>
         <p className="text-[9px] font-black tracking-widest uppercase opacity-30 mb-3 flex items-center gap-2">
           <span className="inline-block w-4 h-px bg-current" />
-          Transformador / Transformer
+          {t.transformerSection}
         </p>
         <div className="space-y-4">
           <InputField label={t.numTransformers} unit="un" error={errors.numTransformers}>
@@ -160,7 +160,7 @@ export function InputPanel({ t, inputs, onChange }: InputPanelProps) {
       <div>
         <p className="text-[9px] font-black tracking-widest uppercase opacity-30 mb-3 flex items-center gap-2">
           <span className="inline-block w-4 h-px bg-current" />
-          Proteção / Protection
+          {t.protectionSection}
         </p>
         <div className="space-y-4">
           <InputField
@@ -210,7 +210,7 @@ export function InputPanel({ t, inputs, onChange }: InputPanelProps) {
       <div>
         <p className="text-[9px] font-black tracking-widest uppercase opacity-30 mb-3 flex items-center gap-2">
           <span className="inline-block w-4 h-px bg-current" />
-          Condutor / Conductor
+          {t.conductorSection}
         </p>
         <InputField label={t.conductorMaterial}>
           <div className="flex gap-3">

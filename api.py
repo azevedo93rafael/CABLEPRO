@@ -31,7 +31,8 @@ async def generate_document(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao parsear 'dati' JSON: {e}")
         
-    temp_folder = os.path.join(TEMP_DIR, str(uuid.uuid4()))
+    # Use a safe temp directory for Render (they have a /tmp)
+    temp_folder = os.path.join("/tmp", str(uuid.uuid4()))
     os.makedirs(temp_folder, exist_ok=True)
     
     template_path = os.path.join(temp_folder, template.filename or "template.docx")
@@ -56,14 +57,15 @@ async def generate_document(
              path=output_full_path, 
              filename=output_filename,
              media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-             # Em producao, seria bom ter FileResponse(background=BackgroundTask(remove_folder, temp_folder))
         )
     except Exception as e:
         # Retornar CWD ao safe mode em caso de throw (e ignorar race conditions por enquanto, em api basica).
-        try: os.chdir(os.path.dirname(TEMP_DIR)) 
+        try: os.chdir(original_cwd) 
         except: pass
         raise HTTPException(status_code=500, detail=f"Erro na geraçao do documento: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True)
+    # Render define a porta via variável de ambiente PORT
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("api:app", host="0.0.0.0", port=port, reload=False)

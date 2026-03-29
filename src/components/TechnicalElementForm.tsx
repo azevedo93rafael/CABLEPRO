@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Save, ArrowLeft, Upload, X, Eye, FileText, Zap, Sun, Flame, Network, Layers, SunMedium, Camera, Plus } from 'lucide-react';
 import { TechnicalElement } from '../types';
-import { MATERIAL_CATEGORIES } from '../constants';
+import { MATERIAL_CATEGORIES, TRANSLATIONS } from '../constants';
 import { supabase } from '../lib/supabase';
+import { useApp } from '../context/AppContext';
 
 interface TechnicalElementFormProps {
   element?: TechnicalElement | null;
@@ -11,11 +12,11 @@ interface TechnicalElementFormProps {
   showToast: (msg: string, type: 'success' | 'error') => void;
 }
 
-function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+function FormSection({ title, children, accentColor }: { title: string; children: React.ReactNode; accentColor: string }) {
   return (
     <div className="bg-white dark:bg-[#141414] p-10 rounded-[32px] border border-black/5 dark:border-white/5 shadow-xl shadow-black/5 space-y-6">
       <div className="flex items-center gap-3">
-        <div className="w-1.5 h-6 bg-[#401318] rounded-full" />
+        <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: accentColor }} />
         <h3 className="text-sm font-bold uppercase tracking-widest opacity-80">{title}</h3>
       </div>
       {children}
@@ -27,21 +28,13 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   return <label className="text-[10px] font-bold opacity-40 uppercase tracking-widest ml-1">{children}</label>;
 }
 
-const inputClass = 'w-full bg-black/5 dark:bg-white/5 border-none rounded-xl px-5 py-4 focus:ring-2 focus:ring-[#401318]/20 transition-all text-sm';
-const textareaClass = `${inputClass} resize-none leading-relaxed`;
+function getInputClass(accentColor: string) {
+  return `w-full bg-[#F5F5F5] dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-xl px-5 py-4 focus:ring-2 focus:bg-white dark:focus:bg-white/10 transition-all text-sm`;
+}
 
-const SECTIONS = [
-  { key: 'descrizione', label: 'Descrizione Tecnica' },
-  { key: 'caratteristiche_dimensionali', label: 'Caratteristiche Dimensionali' },
-  { key: 'riferimenti_normativi', label: 'Riferimenti Normativi' },
-  { key: 'caratteristiche_tecniche', label: 'Caratteristiche Tecniche' },
-  { key: 'tipo_impiego', label: 'Tipo di Impiego' },
-  { key: 'modalita_installazione', label: 'Modalità di Installazione' },
-  { key: 'controlli_collaudi', label: 'Controlli e Collaudi' },
-  { key: 'documentazione', label: 'Documentazione' },
-] as const;
-
-type SectionKey = typeof SECTIONS[number]['key'];
+function getTextareaClass(accentColor: string) {
+  return `${getInputClass(accentColor)} resize-none leading-relaxed`;
+}
 
 function getCategoryIcon(iconName: string, size = 18) {
   switch (iconName) {
@@ -74,6 +67,23 @@ function emptyForm(): Omit<TechnicalElement, 'id' | 'created_at' | 'updated_at'>
 }
 
 export function TechnicalElementForm({ element, onBack, showToast }: TechnicalElementFormProps) {
+  const { lang, moduleTheme } = useApp();
+  const t = TRANSLATIONS[lang];
+  const tc = t.capitolato;
+
+  // Dynamic sections based on language
+  const SECTIONS = [
+    { key: 'descrizione', label: tc.technicalDescription },
+    { key: 'caratteristiche_dimensionali', label: tc.dimensionalCharacteristics },
+    { key: 'riferimenti_normativi', label: tc.normativeReferences },
+    { key: 'caratteristiche_tecniche', label: tc.technicalCharacteristics },
+    { key: 'tipo_impiego', label: tc.typeOfUse },
+    { key: 'modalita_installazione', label: lang === 'pt-BR' ? 'Modalidade de Instalação' : lang === 'it' ? "Modalità di Installazione" : 'Installation Method' },
+    { key: 'controlli_collaudi', label: tc.controlsAndTests },
+    { key: 'documentazione', label: lang === 'pt-BR' ? 'Documentação' : lang === 'it' ? 'Documentazione' : 'Documentation' },
+  ] as const;
+
+  type SectionKey = typeof SECTIONS[number]['key'];
   const [form, setForm] = useState<ReturnType<typeof emptyForm>>(() => ({
     ...emptyForm(),
     ...(element || {}),
@@ -131,7 +141,7 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
 
   const handleSave = async () => {
     if (!form.titolo.trim()) {
-      showToast('Il titolo è obbligatorio', 'error');
+      showToast(tc.titleRequired, 'error');
       return;
     }
     setIsSaving(true);
@@ -154,7 +164,7 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
         throw new Error(error.message || JSON.stringify(error));
       }
 
-      showToast('Elemento salvato con successo', 'success');
+      showToast(tc.elementSaved, 'success');
       onBack();
     } catch (err: any) {
       console.error('Save error:', err);
@@ -181,23 +191,32 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
           className="flex items-center gap-2 text-sm font-bold opacity-50 hover:opacity-100 transition-opacity"
         >
           <ArrowLeft size={16} />
-          Libreria Elementi
+          {tc.elementsLibrary}
         </button>
         <div className="flex items-center gap-3">
-          <button
+           <button
             onClick={() => setShowPreview(p => !p)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all border ${showPreview ? 'bg-[#401318] text-white border-[#401318]' : 'border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5'}`}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all border"
+            style={{ 
+              backgroundColor: showPreview ? moduleTheme.accent : 'transparent',
+              color: showPreview ? 'white' : undefined,
+              borderColor: showPreview ? moduleTheme.accent : undefined
+            }}
           >
             <Eye size={16} />
-            {showPreview ? 'Nascondi Anteprima' : 'Mostra Anteprima'}
+            {showPreview ? tc.hidePreview : tc.showPreview}
           </button>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2.5 bg-[#401318] text-white rounded-xl font-bold text-sm hover:bg-[#5a1b22] transition-all shadow-lg shadow-[#401318]/20 disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg disabled:opacity-50"
+            style={{ 
+              background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`,
+              boxShadow: `0 10px 30px ${moduleTheme.accent}40`
+            }}
           >
             <Save size={16} />
-            {isSaving ? 'Salvataggio...' : element ? 'AGGIORNA ELEMENTO' : 'SALVA ELEMENTO'}
+            {isSaving ? tc.saving : element ? tc.editElement.toUpperCase() : tc.newElement.toUpperCase()}
           </button>
         </div>
       </div>
@@ -208,33 +227,38 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
         <div className={`flex-1 overflow-y-auto custom-scrollbar p-8 space-y-6 ${showPreview ? 'w-1/2 flex-none border-r border-black/5 dark:border-white/5' : ''}`}>
 
           {/* ── General Information ── */}
-          <FormSection title="Informazioni Generali">
+          <FormSection title={tc.generalInformation} accentColor={moduleTheme.accent}>
             {/* Title */}
             <div className="space-y-2">
-              <FieldLabel>Titolo *</FieldLabel>
+              <FieldLabel>{tc.title} *</FieldLabel>
               <input
                 type="text"
                 value={form.titolo}
                 onChange={e => updateField('titolo', e.target.value)}
-                placeholder="Es. Interruttore Magnetotermico Differenziale"
-                className={inputClass}
+                placeholder={tc.examplePlaceholder}
+                className={getInputClass(moduleTheme.accent)}
               />
             </div>
 
             {/* Category picker */}
             <div className="space-y-3">
-              <FieldLabel>Categoria / Disciplina</FieldLabel>
+              <FieldLabel>{lang === 'pt-BR' ? 'Categoria / Disciplina' : lang === 'it' ? 'Categoria / Disciplina' : 'Category / Discipline'}</FieldLabel>
               <div className="grid grid-cols-4 gap-3">
                 {MATERIAL_CATEGORIES.map(cat => (
                   <button
                     key={cat.id}
                     type="button"
                     onClick={() => updateField('category_id', form.category_id === cat.id ? '' : cat.id)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all border text-center ${
-                      form.category_id === cat.id
-                        ? 'bg-[#401318] text-white border-[#401318] shadow-lg shadow-[#401318]/20'
-                        : 'bg-black/5 dark:bg-white/5 border-transparent hover:border-[#401318]/30'
-                    }`}
+                    className="flex flex-col items-center gap-2 p-4 rounded-2xl transition-all border text-center"
+                    style={form.category_id === cat.id ? {
+                      background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`,
+                      color: 'white',
+                      borderColor: moduleTheme.accent,
+                      boxShadow: `0 8px 24px ${moduleTheme.accent}40`
+                    } : {
+                      backgroundColor: 'rgba(0,0,0,0.05)',
+                      borderColor: 'transparent'
+                    }}
                   >
                     {getCategoryIcon(cat.icon)}
                     <span className="text-[9px] font-bold uppercase tracking-wider leading-tight">{cat.name}</span>
@@ -243,14 +267,14 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
               </div>
               {selectedCategory && (
                 <p className="text-[10px] opacity-40 ml-1">
-                  Categoria selezionata: <span className="font-bold">{selectedCategory.name}</span>
+                  {tc.selectedCategory} <span className="font-bold">{selectedCategory.name}</span>
                 </p>
               )}
             </div>
 
             {/* Image upload */}
             <div className="space-y-3">
-              <FieldLabel>Immagine / Foto di Riferimento</FieldLabel>
+              <FieldLabel>{tc.imageReference}</FieldLabel>
               <div className="flex gap-6 items-start">
                 <div
                   className="w-40 h-40 bg-black/5 dark:bg-white/5 rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0 relative cursor-pointer group"
@@ -265,10 +289,10 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
                     </>
                   ) : (
                     <div className="text-center space-y-2 opacity-30">
-                      {isUploadingImage
-                        ? <div className="w-6 h-6 border-4 border-[#401318] border-t-transparent rounded-full animate-spin mx-auto" />
-                        : <><Upload size={24} className="mx-auto" /><p className="text-[10px] font-bold uppercase tracking-widest">Upload</p></>
-                      }
+                  {isUploadingImage
+                    ? <div className="w-6 h-6 border-4 border-[#401318] border-t-transparent rounded-full animate-spin mx-auto" />
+                    : <><Upload size={24} className="mx-auto" /><p className="text-[10px] font-bold uppercase tracking-widest">{tc.upload}</p></>
+                  }
                     </div>
                   )}
                 </div>
@@ -281,10 +305,10 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
                     className="flex items-center gap-2 px-5 py-3 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 rounded-xl font-bold text-sm transition-all disabled:opacity-50"
                   >
                     <Upload size={16} />
-                    {isUploadingImage ? 'Caricamento...' : 'Scegli file'}
+                    {isUploadingImage ? tc.uploading : tc.chooseFile}
                   </button>
                   <p className="text-[10px] opacity-30 leading-relaxed">
-                    PNG, JPG o WEBP. L'immagine è convertita in base64 per l'esportazione DOCX.
+                    {lang === 'pt-BR' ? 'PNG, JPG ou WEBP. A imagem é convertida em base64 para exportação DOCX.' : lang === 'it' ? "PNG, JPG o WEBP. L'immagine è convertita in base64 per l'esportazione DOCX." : 'PNG, JPG or WEBP. Image is converted to base64 for DOCX export.'}
                   </p>
                   {imagePreview && (
                     <button
@@ -293,7 +317,7 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
                       className="flex items-center gap-1 text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors"
                     >
                       <X size={12} />
-                      Rimuovi immagine
+                      {tc.removeImage}
                     </button>
                   )}
                 </div>
@@ -314,19 +338,19 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
 
           {/* ── Dynamic text sections ── */}
           {SECTIONS.map(({ key, label }) => (
-            <FormSection key={key} title={label}>
+            <FormSection key={key} title={label} accentColor={moduleTheme.accent}>
               <textarea
                 rows={5}
                 value={form[key as SectionKey] || ''}
                 onChange={e => updateField(key as SectionKey, e.target.value)}
                 placeholder={`Inserisci ${label.toLowerCase()}...`}
-                className={textareaClass}
+                className={getTextareaClass(moduleTheme.accent)}
               />
             </FormSection>
           ))}
 
           {/* ── Brand ── */}
-          <FormSection title="Marca / Costruttore di Riferimento">
+          <FormSection title="Marca / Costruttore di Riferimento" accentColor={moduleTheme.accent}>
             <div className="space-y-2">
               <FieldLabel>Marca</FieldLabel>
               <input
@@ -334,7 +358,7 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
                 value={form.marca || ''}
                 onChange={e => updateField('marca', e.target.value)}
                 placeholder="Es. ABB, BTICINO, SCHNEIDER o equivalente approvato"
-                className={inputClass}
+                className={getInputClass(moduleTheme.accent)}
               />
             </div>
           </FormSection>
@@ -349,37 +373,37 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
           >
             <div className="mb-6 flex items-center gap-3">
               <FileText size={18} className="opacity-40" />
-              <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">Anteprima Struttura DOCX</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest opacity-40">{tc.docxStructurePreview}</span>
             </div>
 
             <div className="bg-white text-black shadow-2xl p-10 font-serif space-y-8 rounded-2xl text-sm">
               {/* Doc title */}
               <div className="border-b-2 border-[#C00000] pb-4">
                 <h2 className="text-xl font-bold uppercase tracking-tight">
-                  {form.titolo || 'Titolo Elemento'}
+                  {form.titolo || tc.elementTitlePlaceholder}
                 </h2>
                 {selectedCategory && (
                   <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-widest font-bold">
                     {selectedCategory.name}
                   </p>
                 )}
-                {form.marca && <p className="text-xs text-gray-500 mt-1">Marca: {form.marca}</p>}
+                {form.marca && <p className="text-xs text-gray-500 mt-1">{lang === 'pt-BR' ? 'Marca:' : lang === 'it' ? 'Marca:' : 'Brand:'} {form.marca}</p>}
               </div>
 
               {/* Image + description */}
               {(imagePreview || form.descrizione) && (
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Riferimento Grafico</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{tc.graphicReference}</p>
                     <div className="aspect-square bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                       {imagePreview
                         ? <img src={imagePreview} alt="" className="w-full h-full object-contain" />
-                        : <p className="text-[10px] text-gray-300">Nessuna immagine</p>
+                        : <p className="text-[10px] text-gray-300">{tc.noImage}</p>
                       }
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Descrizione</p>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{tc.technicalDescription}</p>
                     <p className="text-xs leading-relaxed text-justify italic text-gray-600">
                       {form.descrizione || '—'}
                     </p>
@@ -400,9 +424,9 @@ export function TechnicalElementForm({ element, onBack, showToast }: TechnicalEl
               {/* Brand footer */}
               {form.marca && (
                 <div className="border-t border-gray-200 pt-4">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Marca di Riferimento</p>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{tc.referenceBrandFooter}</p>
                   <p className="text-xs font-bold mt-1">{form.marca}</p>
-                  <p className="text-[10px] text-gray-400">o equivalente approvato dalla D.L.</p>
+                  <p className="text-[10px] text-gray-400">{lang === 'pt-BR' ? 'ou similar aprovado' : lang === 'it' ? "o equivalente approvato" : 'or approved equivalent'}</p>
                 </div>
               )}
             </div>

@@ -28,6 +28,8 @@ import {
   Trash2,
   Globe,
   Moon,
+  Keyboard,
+  LogOut,
   Upload,
   Library,
   ChevronUp,
@@ -75,6 +77,7 @@ import {
 import { saveAs } from 'file-saver';
 import { UserManagement } from './UserManagement';
 import { ConfirmModal } from './ConfirmModal';
+import { useAuth } from '../context/AuthContext';
 
 interface CapitolatoModuleProps {
   user: { id: string; email: string; role: string };
@@ -86,7 +89,9 @@ interface CapitolatoModuleProps {
 
 export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoModuleProps, 't' | 'darkMode'>) {
   const { lang, setLang, darkMode, setDarkMode, moduleTheme } = useApp();
+  const { setUser } = useAuth();
   const t = TRANSLATIONS[lang];
+  const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [materials, setMaterials] = useState<TechnicalElement[]>([]);
   const [activeView, setActiveView] = useState<'dashboard' | 'editor' | 'projects' | 'users' | 'preview' | 'elements' | 'elementForm'>('dashboard');
   const [editingElement, setEditingElement] = useState<TechnicalElement | null>(null);
@@ -476,7 +481,8 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
     formData.append('template', templateFile);
     formData.append('dati', JSON.stringify(injectionData));
 
-    const response = await fetch('http://localhost:8000/api/generate', {
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const response = await fetch(`${apiUrl}/api/generate`, {
       method: 'POST',
       body: formData
     });
@@ -586,7 +592,7 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-wider uppercase">CAPITOLATO PRO</h1>
-            <p className="text-[10px] opacity-50">Rilo Elettrico</p>
+            <p className="text-[10px] opacity-50">SISTEMA DI INGEGNERIA</p>
           </div>
         </div>
 
@@ -596,70 +602,97 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
             className="w-full flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-[10px] font-bold uppercase tracking-widest"
           >
             <ChevronLeft size={14} />
-            Torna al Selettore
+            {t.cabineMT.back}
           </button>
         </div>
 
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          <p className="px-4 text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4">PRINCIPALE</p>
+          <p className="px-4 text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4">{t.capitolato.principal}</p>
           
           <button 
             onClick={() => setActiveView('dashboard')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeView === 'dashboard' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${activeView === 'dashboard' ? 'bg-white/10' : 'hover:bg-white/5'}`}
           >
-            <LayoutDashboard size={20} />
-            <span className="font-medium">Dashboard</span>
+            <div className={`p-2 rounded-lg ${activeView === 'dashboard' ? 'bg-white text-white' : 'bg-white/5 text-white/60'}`} style={activeView === 'dashboard' ? { color: moduleTheme.primary } : {}}>
+              <LayoutDashboard size={18} />
+            </div>
+            <span className={`text-[10px] font-bold tracking-wider uppercase ${activeView === 'dashboard' ? 'text-white' : 'text-white/60'}`}>{t.capitolato.dashboard}</span>
+            {activeView === 'dashboard' && <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full"></div>}
           </button>
 
           <button 
             onClick={() => setActiveView('projects')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeView === 'projects' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${activeView === 'projects' ? 'bg-white/10' : 'hover:bg-white/5'}`}
           >
-            <FolderOpen size={20} />
-            <span className="font-medium">Progetti</span>
+            <div className={`p-2 rounded-lg ${activeView === 'projects' ? 'bg-white text-white' : 'bg-white/5 text-white/60'}`} style={activeView === 'projects' ? { color: moduleTheme.primary } : {}}>
+              <FolderOpen size={18} />
+            </div>
+            <span className={`text-[10px] font-bold tracking-wider uppercase ${activeView === 'projects' ? 'text-white' : 'text-white/60'}`}>{t.capitolato.projects}</span>
+            {activeView === 'projects' && <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full"></div>}
           </button>
-
 
           <button 
             onClick={() => { setEditingElement(null); setActiveView('elements'); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeView === 'elements' || activeView === 'elementForm' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${activeView === 'elements' || activeView === 'elementForm' ? 'bg-white/10' : 'hover:bg-white/5'}`}
           >
-            <FileText size={20} />
-            <span className="font-medium">Libreria Elementi</span>
+            <div className={`p-2 rounded-lg ${activeView === 'elements' || activeView === 'elementForm' ? 'bg-white text-white' : 'bg-white/5 text-white/60'}`} style={activeView === 'elements' || activeView === 'elementForm' ? { color: moduleTheme.primary } : {}}>
+              <FileText size={18} />
+            </div>
+            <span className={`text-[10px] font-bold tracking-wider uppercase ${activeView === 'elements' || activeView === 'elementForm' ? 'text-white' : 'text-white/60'}`}>{t.capitolato.elementsLibrary}</span>
+            {(activeView === 'elements' || activeView === 'elementForm') && <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full"></div>}
           </button>
 
-          <div className="pt-8">
-            <p className="px-4 text-[10px] font-bold opacity-30 uppercase tracking-widest mb-4">CONFIGURAZIONE</p>
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl opacity-60 hover:opacity-100 hover:bg-white/5 transition-all">
-              <Settings size={20} />
-              <span className="font-medium">Impostazioni</span>
+          {user.role === 'admin' && (
+            <button 
+              onClick={() => setActiveView('users')}
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl transition-all ${activeView === 'users' ? 'bg-white/10' : 'hover:bg-white/5'}`}
+            >
+              <div className={`p-2 rounded-lg ${activeView === 'users' ? 'bg-white text-white' : 'bg-white/5 text-white/60'}`} style={activeView === 'users' ? { color: moduleTheme.primary } : {}}>
+                <Users size={18} />
+              </div>
+              <span className={`text-[10px] font-bold tracking-wider uppercase ${activeView === 'users' ? 'text-white' : 'text-white/60'}`}>{t.capitolato.userManagementNav}</span>
+              {activeView === 'users' && <div className="ml-auto w-1.5 h-1.5 bg-white rounded-full"></div>}
             </button>
-            {user.role === 'admin' && (
-              <button 
-                onClick={() => setActiveView('users')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeView === 'users' ? 'bg-white/10 shadow-lg' : 'hover:bg-white/5 opacity-60 hover:opacity-100'}`}
-              >
-                <Users size={20} />
-                <span className="font-medium">Gestione Utenti</span>
-              </button>
-            )}
-
-          </div>
+          )}
         </nav>
 
-        <div className="p-6 border-t border-white/10 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden">
               <div
-              className="w-full h-full flex items-center justify-center text-white font-bold uppercase"
-              style={{ backgroundColor: moduleTheme.accent }}
-            >
-                {(user?.email || 'U').charAt(0)}
+                className="w-full h-full flex items-center justify-center text-white font-bold uppercase"
+                style={{ backgroundColor: moduleTheme.accent }}
+              >
+                {(user?.email?.charAt(0) || 'U').toUpperCase()}
               </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold leading-tight uppercase truncate">{user?.email}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-bold leading-tight uppercase truncate">{user?.email?.split('@')[0] || 'USER'}</p>
+              <p className="text-[9px] opacity-50 truncate">{user?.email}</p>
             </div>
+            <button 
+              onClick={() => setIsShortcutsModalOpen(true)}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white"
+              title="Atalhos de Teclado"
+            >
+              <Keyboard size={16} />
+            </button>
+            <button 
+              onClick={async () => {
+                try {
+                  await supabase.auth.signOut();
+                } catch (e) {
+                  // Ignore
+                } finally {
+                  setUser(null);
+                  localStorage.removeItem('cablefill_user');
+                }
+              }}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white"
+              title={t.auth.logout}
+            >
+              <LogOut size={16} />
+            </button>
           </div>
         </div>
       </aside>
@@ -669,15 +702,15 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
         {/* Header */}
         <header className="h-20 bg-white dark:bg-[#141414] border-b border-black/5 dark:border-white/5 flex items-center justify-between px-8 z-10">
           <div className="flex items-center gap-4">
-            <span className="text-[10px] font-bold opacity-30 uppercase tracking-widest">MODULO</span>
+            <span className="text-[10px] font-bold opacity-30 uppercase tracking-widest">{t.header.currentModule}</span>
             <h2 className="text-xl font-bold uppercase tracking-tight">
-              {activeView === 'dashboard' ? 'Dashboard' : 
+              {activeView === 'dashboard' ? t.capitolato.dashboard : 
                activeView === 'editor' ? t.capitolato.newCapitolato : 
                activeView === 'users' ? t.userManagement.title :
                activeView === 'projects' ? t.capitolato.existingProjects :
-               activeView === 'elements' ? 'Libreria Elementi Tecnici' :
-               activeView === 'elementForm' ? (editingElement ? 'Modifica Elemento' : 'Nuovo Elemento Tecnico') :
-               'Anteprima'}
+               activeView === 'elements' ? t.capitolato.technicalElementsLibrary :
+               activeView === 'elementForm' ? (editingElement ? t.capitolato.editElement : t.capitolato.newElement) :
+               t.capitolato.preview}
             </h2>
           </div>
 
@@ -685,17 +718,17 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
             <button 
               onClick={() => setDarkMode(!darkMode)}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/10 transition-all shadow-sm"
-              title={darkMode ? 'Modo Claro' : 'Modo Escuro'}
+              title={darkMode ? t.header.lightMode : t.header.darkMode}
             >
               {darkMode ? (
                 <>
                   <Sun size={14} className="text-yellow-400" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">Light</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider">{t.header.lightMode}</span>
                 </>
               ) : (
                 <>
                   <Moon size={14} className="opacity-60" />
-                  <span className="text-[9px] font-bold uppercase tracking-wider">Dark</span>
+                  <span className="text-[9px] font-bold uppercase tracking-wider">{t.header.darkMode}</span>
                 </>
               )}
             </button>
@@ -721,7 +754,7 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                   className="flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-[#1a1a1a] border border-black/10 dark:border-white/10 rounded-xl font-bold text-sm hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-50"
                 >
                   <Save size={18} />
-                  {isSaving ? 'Salvataggio...' : 'SALVA PROGETTO'}
+                  {isSaving ? t.capitolato.saving : t.preview.saveProject}
                 </button>
                 <button 
                   onClick={handleExportWord}
@@ -730,7 +763,7 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                   style={{ backgroundColor: moduleTheme.accent }}
                 >
                   <FileDown size={18} />
-                  {isExporting ? 'Esportazione...' : 'ESPORTA IN WORD'}
+                  {isExporting ? t.capitolato.exporting : t.capitolato.exportToWord}
                 </button>
               </>
             )}
@@ -751,8 +784,10 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                 <div className="grid grid-cols-3 gap-6">
                   <button 
                     onClick={handleNewProject}
-                    className="col-span-2 group p-10 rounded-[32px] text-white flex flex-col justify-between h-64 shadow-2xl relative overflow-hidden"
-                    style={{ backgroundColor: moduleTheme.primary }}
+                    className="col-span-2 group p-10 rounded-[32px] text-white flex flex-col justify-between h-64 shadow-2xl relative overflow-hidden dark:bg-[#1A1A1A]/40 dark:backdrop-blur-xl dark:border-white/5 dark:hover:border-white/20 dark:hover:bg-[#1A1A1A]/60 border border-transparent hover:border-white/30 transition-all duration-500"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.dark})`
+                    }}
                   >
                     <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:scale-110 transition-transform">
                       <Plus size={160} />
@@ -761,26 +796,30 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                       <Plus size={32} />
                     </div>
                     <div>
-                      <h3 className="text-3xl font-bold mb-2">Crea Nuovo Capitolato</h3>
-                      <p className="opacity-60">Inizia un nuovo documento tecnico da zero</p>
+                      <h3 className="text-3xl font-bold mb-2">{t.capitolato.createNewCapitolato}</h3>
+                      <p className="opacity-60">{t.capitolato.startNewDocument}</p>
                     </div>
                   </button>
 
-                  <div className="bg-white dark:bg-[#141414] p-10 rounded-[32px] border border-black/5 dark:border-white/5 flex flex-col justify-between h-64 shadow-xl shadow-black/5">
-                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${moduleTheme.accent}15`, color: moduleTheme.accent }}>
+                  <div className="dark:bg-[#1A1A1A]/40 dark:backdrop-blur-xl p-10 rounded-[32px] dark:border-white/5 border border-black/5 flex flex-col justify-between h-64 shadow-2xl"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${moduleTheme.primary}20, ${moduleTheme.accent}10)`
+                    }}
+                  >
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${moduleTheme.accent}20`, color: moduleTheme.accent }}>
                       <FolderOpen size={32} />
                     </div>
                     <div>
-                      <h3 className="text-2xl font-bold mb-1">{projects.length}</h3>
-                      <p className="opacity-50 text-sm font-bold uppercase tracking-widest">Progetti Salvati</p>
+                      <h3 className="text-2xl font-bold mb-1 dark:text-white" style={{ color: moduleTheme.primary }}>{projects.length}</h3>
+                      <p className="text-sm font-bold uppercase tracking-widest dark:text-white/40" style={{ color: moduleTheme.primary }}>{t.capitolato.savedProjects}</p>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold opacity-30 uppercase tracking-widest">Progetti Recenti</h4>
-                    <button onClick={() => setActiveView('projects')} className="text-sm font-bold text-[#401318] hover:underline">Vedi tutti</button>
+                    <h4 className="text-sm font-bold uppercase tracking-widest dark:opacity-30 dark:text-white" style={{ color: moduleTheme.primary }}>{t.capitolato.recentProjects}</h4>
+                    <button onClick={() => setActiveView('projects')} className="text-sm font-bold hover:underline transition-colors dark:text-white/40 hover:text-white" style={{ color: moduleTheme.accent }}>{t.capitolato.viewAll}</button>
                   </div>
                   
                   <div className="grid grid-cols-1 gap-4">
@@ -807,22 +846,24 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                           }
                           setActiveView('editor');
                         }}
-                        className="bg-white dark:bg-[#141414] p-6 rounded-2xl border border-black/5 dark:border-white/5 flex items-center justify-between hover:border-[#401318]/30 transition-all group"
+                        className="p-6 rounded-2xl border border-black/5 dark:border-white/5 dark:bg-[#141414] flex items-center justify-between hover:border-black/10 dark:hover:border-white/20 transition-all group"
+                        style={{ backgroundColor: `${moduleTheme.primary}08` }}
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-black/5 dark:bg-white/5 rounded-xl flex items-center justify-center opacity-40 group-hover:opacity-100 transition-opacity">
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity"
+                            style={{ backgroundColor: `${moduleTheme.accent}15`, color: moduleTheme.accent }}>
                             <FileText size={24} />
                           </div>
                           <div className="text-left">
-                            <h5 className="font-bold text-lg">{p.title}</h5>
-                            <p className="text-sm opacity-50">{p.date} • {p.issuer}</p>
+                            <h5 className="font-bold text-lg dark:text-white">{p.title}</h5>
+                            <p className="text-sm dark:opacity-50" style={{ color: `${moduleTheme.primary}80` }}>{p.date} • {p.issuer}</p>
                           </div>
                         </div>
-                        <ChevronRight size={20} className="opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                        <ChevronRight size={20} className="opacity-20 group-hover:opacity-100 group-hover:translate-x-1 transition-all dark:text-white" style={{ color: moduleTheme.accent }} />
                       </button>
                     ))}
                     {projects.length === 0 && (
-                      <div className="py-12 text-center opacity-30 italic">Nessun projeto recente</div>
+                      <div className="py-12 text-center opacity-30 italic dark:text-white/30">{t.capitolato.noRecentProjects}</div>
                     )}
                   </div>
                 </div>
@@ -850,25 +891,38 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                     />
 
                     {/* NEW SECTION: TEMPLATE & LAYOUT */}
-                    <div className="bg-white dark:bg-[#141414] p-10 rounded-[40px] border border-black/5 dark:border-white/5 shadow-xl shadow-black/5 space-y-8">
-                      <div className="flex items-center gap-3">
-                        <div className="w-1.5 h-6 bg-blue-500 rounded-full" />
-                        <h3 className="text-sm font-bold uppercase tracking-widest opacity-80">Modello e Layout</h3>
+                    <div className="bg-white dark:bg-[#141414] p-8 rounded-3xl border border-black/5 dark:border-white/5 shadow-lg shadow-black/5 dark:shadow-black/20 space-y-6">
+                      <div className="flex items-center gap-3 pb-4 border-b border-black/5 dark:border-white/5">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`,
+                            boxShadow: `0 8px 24px ${moduleTheme.accent}40`
+                          }}>
+                          <FileText size={20} />
+                        </div>
+                        <div>
+                          <h3 className="text-base font-bold uppercase tracking-wide dark:text-white">Modello e Layout</h3>
+                          <p className="text-[10px] opacity-40 uppercase tracking-wider dark:text-white/40">Template DOCX</p>
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center text-left">
                         <div className="space-y-4">
-                          <p className="text-xs opacity-60 leading-relaxed italic">
-                            Carica um arquivo **DOCX** que servirá como base para o seu documento. 
+                          <p className="text-xs opacity-60 leading-relaxed dark:text-white/60">
+                            Carica um arquivo <strong>DOCX</strong> que servirá como base para o seu documento. 
                             O sistema irá injetar os dados nos campos marcados (ex: {"{{project_title}}"}).
                           </p>
-                          <div className="flex items-center gap-4 p-4 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5">
-                            <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                          <div className="flex items-center gap-4 p-4 rounded-xl bg-[#F5F5F5] dark:bg-white/5 border border-black/5 dark:border-white/10">
+                            <div className="w-12 h-12 rounded-xl flex items-center justify-center text-white"
+                              style={{ 
+                                background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`,
+                                boxShadow: `0 8px 24px ${moduleTheme.accent}40`
+                              }}>
                                <FileText size={24} />
                             </div>
                             <div className="flex-1 min-w-0">
-                               <p className="text-sm font-bold truncate">{templateFile ? templateFile.name : (selectedProject?.template_url ? 'Template Esistente' : 'Nessun Modello')}</p>
-                               <p className="text-[10px] opacity-40 uppercase tracking-widest">Base DOCX</p>
+                               <p className="text-sm font-bold truncate dark:text-white">{templateFile ? templateFile.name : (selectedProject?.template_url ? 'Template Esistente' : t.capitolato.noTemplate)}</p>
+                               <p className="text-[10px] opacity-40 uppercase tracking-widest dark:text-white/40">Base DOCX</p>
                             </div>
                           </div>
                         </div>
@@ -884,16 +938,20 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                              }}
                              className="hidden"
                            />
-                           <label 
-                             htmlFor="doc-template-upload"
-                             className="flex items-center justify-center gap-3 w-full py-4 bg-[#401318] text-white rounded-2xl font-black italic uppercase tracking-tighter hover:scale-[1.02] active:scale-95 transition-all cursor-pointer shadow-lg shadow-[#401318]/20"
+                            <label 
+                              htmlFor="doc-template-upload"
+                              className="flex items-center justify-center gap-3 w-full py-4 text-white rounded-xl font-bold uppercase tracking-wider hover:scale-[1.02] active:scale-95 transition-all cursor-pointer shadow-lg"
+                              style={{ 
+                                background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`,
+                                boxShadow: `0 10px 30px ${moduleTheme.accent}40`
+                              }}
                            >
                              <Upload size={20} />
                              Scegli Modello DOCX
                            </label>
                            {selectedProject?.template_url && (
-                             <p className="text-[10px] text-center opacity-40 font-bold uppercase tracking-widest">
-                               <CheckCircle2 size={12} className="inline mr-1 text-green-500" /> Modello caricato presente nel database
+                             <p className="text-[10px] text-center opacity-40 font-bold uppercase tracking-widest dark:text-white/40">
+                               <CheckCircle2 size={12} className="inline mr-1 text-green-500" /> Modello presente nel database
                              </p>
                            )}
                         </div>
@@ -903,21 +961,22 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                     {/* SEPARATOR */}
                     <div className="flex items-center gap-4">
                       <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
-                      <h4 className="text-[10px] font-bold opacity-30 uppercase tracking-[0.3em]">Selezione Elementi</h4>
+                      <h4 className="text-[10px] font-bold opacity-30 uppercase tracking-[0.3em] dark:text-white/30">Selezione Elementi</h4>
                       <div className="flex-1 h-px bg-black/5 dark:bg-white/5" />
                     </div>
 
                     {/* BOTTOM: ELEMENT SELECTION */}
-                    <div className="bg-white dark:bg-[#141414] p-10 rounded-[40px] border border-black/5 dark:border-white/5 shadow-xl shadow-black/5 space-y-8">
-                      <div className="flex items-center gap-4">
+                    <div className="bg-white dark:bg-[#141414] p-8 rounded-3xl border border-black/5 dark:border-white/5 shadow-lg shadow-black/5 dark:shadow-black/20 space-y-6">
+                      <div className="flex items-center gap-4 pb-4 border-b border-black/5 dark:border-white/5">
                         <div className="relative flex-1">
-                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30" size={18} />
+                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30 dark:text-white/30" size={18} />
                           <input 
                             type="text" 
                             placeholder="Cerca nella libreria..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl pl-12 pr-6 py-4 focus:ring-2 focus:ring-[#401318]/20 transition-all text-sm"
+                            className="w-full bg-[#F5F5F5] dark:bg-white/5 border border-black/5 dark:border-white/10 rounded-xl pl-12 pr-6 py-3 focus:ring-2 transition-all text-sm dark:text-white placeholder:text-black/20 dark:placeholder:text-white/20"
+                            style={{ '--tw-ring-color': moduleTheme.accent } as React.CSSProperties}
                           />
                         </div>
                         <div className="flex items-center gap-2">
@@ -927,9 +986,13 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                                onClick={() => setSelectedCategory(prev => prev === cat.id ? '' : cat.id)}
                                className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                                  selectedCategory === cat.id 
-                                   ? 'bg-[#401318] text-white shadow-lg shadow-[#401318]/30' 
-                                   : 'bg-black/5 dark:bg-white/5 opacity-40 hover:opacity-100'
+                                   ? 'text-white shadow-lg' 
+                                   : 'bg-[#F5F5F5] dark:bg-white/5 opacity-40 hover:opacity-100 dark:text-white/60'
                                }`}
+                               style={selectedCategory === cat.id ? { 
+                                 background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`,
+                                 boxShadow: `0 8px 24px ${moduleTheme.accent}40`
+                               } : {}}
                                title={cat.name}
                              >
                                {getCategoryIcon(cat.icon)}
@@ -945,24 +1008,34 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                             <button
                               key={element.id}
                               onClick={() => toggleMaterial(element)}
-                              className={`flex items-center gap-4 p-4 rounded-2xl border transition-all text-left ${
+                              className={`flex items-center gap-4 p-4 rounded-xl border transition-all text-left ${
                                 isSelected 
-                                  ? 'bg-[#401318]/5 border-[#401318]/20 shadow-inner' 
-                                  : 'bg-white dark:bg-black/20 border-black/5 dark:border-white/5 hover:border-[#401318]/30'
+                                  ? 'border-transparent shadow-inner dark:bg-white/5' 
+                                  : 'bg-[#F5F5F5] dark:bg-white/5 border-black/5 dark:border-white/5 hover:border-white/20'
                               }`}
+                              style={isSelected ? { 
+                                background: `${moduleTheme.accent}15`,
+                                borderColor: `${moduleTheme.accent}30`
+                              } : {}}
                             >
-                              <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                              <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all shrink-0 ${
                                 isSelected 
-                                  ? 'bg-[#401318] border-[#401318] text-white' 
-                                  : 'border-black/10 dark:border-white/10'
-                              }`}>
+                                  ? 'text-white border-transparent' 
+                                  : 'border-black/20 dark:border-white/20'
+                              }`}
+                              style={isSelected ? {
+                                background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`
+                              } : {}}
+                              >
                                 {isSelected && <Check size={14} />}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className={`font-bold text-sm truncate ${isSelected ? 'text-[#401318] dark:text-white' : 'opacity-80'}`}>
+                                <p className={`font-bold text-sm truncate ${isSelected ? 'dark:text-white' : 'opacity-80 dark:text-white/80'}`}
+                                  style={isSelected ? { color: moduleTheme.accent } : {}}
+                                >
                                   {element.titolo}
                                 </p>
-                                <p className="text-[10px] opacity-40 font-medium uppercase tracking-widest">{element.marca || '—'}</p>
+                                <p className="text-[10px] opacity-40 font-medium uppercase tracking-widest dark:text-white/40">{element.marca || '—'}</p>
                               </div>
                             </button>
                           );
@@ -970,8 +1043,8 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                       </div>
 
                       {filteredMaterials?.length === 0 && (
-                        <div className="py-20 text-center opacity-20 italic">
-                          Nessun elemento trovato.
+                        <div className="py-20 text-center opacity-20 italic dark:text-white/30">
+                          {t.capitolato.noElements}
                         </div>
                       )}
                     </div>
@@ -982,7 +1055,11 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                   <button 
                     onClick={() => setActiveView('preview')}
-                    className="bg-[#401318] text-white px-10 py-5 rounded-[24px] font-black italic uppercase tracking-tighter flex items-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-[#401318]/40 border-4 border-white/10"
+                    className="text-white px-10 py-5 rounded-2xl font-bold uppercase tracking-wider flex items-center gap-4 hover:scale-105 active:scale-95 transition-all shadow-2xl border-4 border-white/10"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`,
+                      boxShadow: `0 10px 40px ${moduleTheme.accent}40`
+                    }}
                   >
                     GENERA BLUEPRINT E ESPORTA
                     <ChevronRight size={24} />
@@ -1009,7 +1086,7 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                       Torna all'Editor
                     </button>
                     <div className="w-1 h-4 bg-black/10 rounded-full" />
-                    <h3 className="text-sm font-bold uppercase tracking-widest opacity-80">Anteprima Blueprint Documento</h3>
+                    <h3 className="text-sm font-bold uppercase tracking-widest opacity-80">{t.capitolato.blueprintPreview}</h3>
                   </div>
                   <div className="flex items-center gap-4">
                      <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest hidden md:block">
@@ -1018,7 +1095,11 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                      <button 
                        onClick={handleExportWord}
                        disabled={isExporting}
-                       className="flex items-center gap-2 px-8 py-3 bg-[#401318] text-white rounded-xl font-bold text-sm hover:bg-[#5a1b22] transition-all shadow-lg shadow-[#401318]/20 disabled:opacity-50"
+                       className="flex items-center gap-2 px-8 py-3 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg disabled:opacity-50"
+                       style={{ 
+                         background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`,
+                         boxShadow: `0 10px 30px ${moduleTheme.accent}40`
+                       }}
                      >
                        {isExporting ? <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" /> : <Download size={18} />}
                        SCARICA DOCX FINALE
@@ -1030,7 +1111,11 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                   <div className="max-w-5xl mx-auto h-full">
                     {!templateFile ? (
                       <div className="h-full flex flex-col items-center justify-center space-y-6 text-center">
-                        <div className="w-24 h-24 bg-[#401318]/5 rounded-3xl flex items-center justify-center text-[#401318]/20">
+                        <div className="w-24 h-24 rounded-3xl flex items-center justify-center"
+                          style={{ 
+                            background: `${moduleTheme.accent}15`,
+                            color: moduleTheme.accent
+                          }}>
                            <FileText size={48} />
                         </div>
                         <div className="space-y-2 max-w-md">
@@ -1042,14 +1127,23 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                         </div>
                         <button 
                           onClick={() => setActiveView('editor')}
-                          className="px-6 py-3 bg-[#401318] text-white rounded-xl font-bold text-sm hover:bg-[#5a1b22] transition-all"
+                          className="px-6 py-3 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all"
+                          style={{ 
+                            background: `linear-gradient(135deg, ${moduleTheme.accent}, ${moduleTheme.primary})`,
+                            boxShadow: `0 10px 30px ${moduleTheme.accent}40`
+                          }}
                         >
                           VAI ALLE IMPOSTAZIONI
                         </button>
                       </div>
                     ) : isGeneratingPreview ? (
                       <div className="h-full flex flex-col items-center justify-center space-y-4">
-                        <div className="w-12 h-12 border-4 border-[#401318]/20 border-t-[#401318] rounded-full animate-spin" />
+                        <div className="w-12 h-12 rounded-full animate-spin border-4"
+                          style={{ 
+                            borderColor: `${moduleTheme.accent}20`,
+                            borderTopColor: moduleTheme.accent
+                          }}
+                        />
                         <p className="text-sm font-bold opacity-40 animate-pulse uppercase tracking-[0.2em]">Generando anteprima reale DOCX...</p>
                       </div>
                     ) : (
@@ -1069,10 +1163,11 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                 className="max-w-6xl mx-auto space-y-6 p-8"
               >
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-2xl font-bold">I Tuoi Capitolati</h3>
+                  <h3 className="text-2xl font-bold text-white">I Tuoi Capitolati</h3>
                   <button 
                     onClick={handleNewProject}
-                    className="flex items-center gap-2 px-6 py-3 bg-[#401318] text-white rounded-xl font-bold text-sm hover:bg-[#5a1b22] transition-all shadow-lg shadow-[#401318]/20"
+                    className="flex items-center gap-2 px-6 py-3 text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all shadow-lg"
+                    style={{ background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.accent})`, boxShadow: `0 10px 30px ${moduleTheme.primary}40` }}
                   >
                     <Plus size={20} />
                     NUOVO PROGETTO
@@ -1083,15 +1178,16 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                   {projects.map(p => (
                     <div 
                       key={p.id}
-                      className="bg-white dark:bg-[#141414] p-8 rounded-[32px] border border-black/5 dark:border-white/5 flex items-center justify-between hover:border-[#401318]/30 transition-all group premium-shadow"
+                      className="bg-[#1A1A1A]/40 backdrop-blur-xl p-8 rounded-[32px] border border-white/5 flex items-center justify-between hover:border-white/20 hover:bg-[#1A1A1A]/60 transition-all group shadow-2xl"
                     >
                       <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-[#401318]/5 rounded-2xl flex items-center justify-center text-[#401318]">
+                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-500 group-hover:rotate-6"
+                          style={{ background: `linear-gradient(135deg, ${moduleTheme.accent}20, ${moduleTheme.primary}20)`, boxShadow: `0 8px 24px ${moduleTheme.accent}20`, color: moduleTheme.accent }}>
                           <FileText size={32} />
                         </div>
                         <div>
-                          <h4 className="text-xl font-bold mb-1">{p.title}</h4>
-                          <div className="flex items-center gap-4 text-sm opacity-40">
+                          <h4 className="text-xl font-bold mb-1 text-white">{p.title}</h4>
+                          <div className="flex items-center gap-4 text-sm text-white/40">
                             <span className="flex items-center gap-1"><Users size={14} /> {p.issuer}</span>
                             <span className="flex items-center gap-1"><LayoutDashboard size={14} /> {p.date}</span>
                              <span className="flex items-center gap-1"><Library size={14} /> {(p.selectedMaterials || []).length} Articoli</span>
@@ -1121,13 +1217,13 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                              }
                              setActiveView('editor');
                           }}
-                          className="px-6 py-3 bg-black/5 dark:bg-white/5 hover:bg-[#401318] hover:text-white rounded-xl font-bold text-sm transition-all"
+                          className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold text-sm transition-all border border-white/10 hover:border-white/20"
                         >
                           APRI PROGETTO
                         </button>
                         <button 
                           onClick={() => handleDeleteProjectClick(p.id)}
-                          className="p-3 bg-black/5 dark:bg-white/5 hover:bg-red-500 hover:text-white rounded-xl transition-all opacity-40 hover:opacity-100"
+                          className="p-3 bg-white/5 hover:bg-red-500/80 hover:text-white rounded-xl transition-all opacity-40 hover:opacity-100 text-white"
                           title="Elimina progetto"
                         >
                           <Plus size={20} className="rotate-45" />
@@ -1137,10 +1233,10 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
                   ))}
                   {projects.length === 0 && (
                     <div className="py-24 text-center space-y-4">
-                      <div className="w-20 h-20 bg-black/5 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto opacity-20">
-                        <FolderOpen size={40} />
+                      <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto opacity-20">
+                        <FolderOpen size={40} className="text-white" />
                       </div>
-                      <p className="opacity-30 italic">Nessun capitolato trovato nel database.</p>
+                      <p className="opacity-30 italic text-white/30">{t.capitolato.noProjects}</p>
                     </div>
                   )}                </div>
               </motion.div>

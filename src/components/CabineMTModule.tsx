@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Zap, ChevronLeft, FileDown, Save, Plus, X,
   Sun, Moon, Globe, Folder, LogOut,
-  Layers, Wind,
+  Layers, Wind, Keyboard,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -109,7 +109,7 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
           <Logo className="w-10 h-10 text-white" />
           <div>
             <h1 className="text-sm font-bold tracking-wider uppercase">{tMT.moduleName}</h1>
-            <p className="text-[10px] opacity-50">Rilo Elettrico</p>
+            <p className="text-[10px] opacity-50">SISTEMA DI INGEGNERIA</p>
           </div>
         </div>
 
@@ -117,10 +117,11 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
         <div className="px-4 py-3 border-b border-white/10">
           <button
             onClick={onBack}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-[10px] font-bold uppercase tracking-widest"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-[10px] font-bold uppercase tracking-widest relative overflow-hidden group"
           >
-            <ChevronLeft size={14} />
+            <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
             {tMT.back}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
           </button>
         </div>
 
@@ -150,35 +151,44 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
         </nav>
 
         {/* User + Logout */}
-        <div className="p-4 border-t border-white/10 flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden">
+        <div className="p-4 border-t border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/10 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden">
               <div
-                className="w-full h-full flex items-center justify-center text-white font-bold uppercase text-[11px]"
+                className="w-full h-full flex items-center justify-center text-white font-bold uppercase"
                 style={{ backgroundColor: moduleTheme.accent }}
               >
                 {avatarLetter}
               </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-[9px] font-bold leading-tight uppercase truncate">{displayName}</p>
-              <p className="text-[8px] opacity-50 truncate">{user.email}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] font-bold leading-tight uppercase truncate">{displayName}</p>
+              <p className="text-[9px] opacity-50 truncate">{user.email}</p>
             </div>
+            <button
+              onClick={() => {
+                // Shortcuts modal would go here
+              }}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white"
+              title={t.misc.keyboardShortcuts}
+            >
+              <Keyboard size={16} />
+            </button>
+            <button
+              onClick={async () => {
+                const { supabase } = await import('../lib/supabase');
+                try { await supabase.auth.signOut(); } catch { /* ignore */ }
+                finally {
+                  setUser(null);
+                  localStorage.removeItem('cablefill_user');
+                }
+              }}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white/40 hover:text-white"
+              title={t.auth.logout}
+            >
+              <LogOut size={16} />
+            </button>
           </div>
-          <button
-            onClick={async () => {
-              const { supabase } = await import('../lib/supabase');
-              try { await supabase.auth.signOut(); } catch { /* ignore */ }
-              finally {
-                setUser(null);
-                localStorage.removeItem('cablefill_user');
-              }
-            }}
-            className="p-1.5 hover:bg-white/10 rounded-full transition-colors text-white/40 hover:text-white flex-shrink-0"
-            title={t.auth.logout}
-          >
-            <LogOut size={15} />
-          </button>
         </div>
       </aside>
 
@@ -236,10 +246,15 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
             <button
               id="cmt-save-project"
               onClick={() => saveProject(showToast, t)}
-              className="px-4 py-1.5 border border-black/10 dark:border-white/10 text-[10px] font-bold hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all flex items-center gap-2 dark:text-white rounded"
+              className="relative px-5 py-2.5 rounded-xl text-[10px] font-bold text-white active:scale-95 transition-all flex items-center gap-2 overflow-hidden group"
+              style={{
+                background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.accent})`,
+                boxShadow: `0 4px 15px ${moduleTheme.primary}40`,
+              }}
             >
-              <Save size={13} style={{ color: moduleTheme.accent }} />
-              {tMT.saveProject}
+              <Save size={14} className="relative z-10" />
+              <span className="relative z-10">{tMT.saveProject}</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
             </button>
 
             {/* Export PDF — only on grounding tab with results */}
@@ -249,11 +264,15 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 id="cmt-export-pdf"
                 onClick={() => setShowReport(true)}
-                className="flex items-center gap-2 text-white px-4 py-1.5 text-[9px] font-bold uppercase tracking-widest hover:opacity-90 transition-opacity rounded print:hidden"
-                style={{ backgroundColor: moduleTheme.accent }}
+                className="relative flex items-center gap-2 text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all rounded-xl overflow-hidden group"
+                style={{
+                  background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.accent})`,
+                  boxShadow: `0 4px 15px ${moduleTheme.primary}40`,
+                }}
               >
-                <FileDown size={12} />
-                <span className="hidden sm:inline">{tMT.exportPDF}</span>
+                <FileDown size={14} className="relative z-10" />
+                <span className="hidden sm:inline relative z-10">{tMT.exportPDF}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
               </motion.button>
             )}
           </div>
@@ -268,11 +287,11 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
               id="cmt-open-saved-projects"
               onClick={() => setShowDrawer(true)}
               className="flex items-center gap-1.5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors"
-              title="Banco de Projetos"
+              title={t.capitolato.projects}
             >
               <Folder size={14} className="opacity-40" />
               <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest hidden sm:inline">
-                {lang === 'pt-BR' ? 'Projetos' : lang === 'it' ? 'Progetti' : 'Projects'}
+                {t.capitolato.projects}
               </span>
             </button>
           </div>
@@ -327,10 +346,14 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
             ))}
             <button
               onClick={() => addNewProject(t)}
-              className="p-4 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors"
+              className="p-4 rounded-xl text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-all relative overflow-hidden group"
+              style={{
+                background: `linear-gradient(135deg, ${moduleTheme.primary}20, ${moduleTheme.accent}20)`,
+              }}
               title={tMT.newProject}
             >
-              <Plus size={16} />
+              <Plus size={16} className="relative z-10" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
             </button>
           </div>
         </div>
@@ -382,11 +405,15 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               onClick={() => setShowReport(true)}
-                              className="flex items-center gap-1.5 text-white px-3 py-1 text-[9px] font-bold uppercase tracking-widest hover:opacity-90 transition-opacity rounded print:hidden"
-                              style={{ backgroundColor: moduleTheme.accent }}
+                              className="relative flex items-center gap-1.5 text-white px-4 py-2 text-[9px] font-bold uppercase tracking-widest transition-all rounded-lg overflow-hidden group"
+                              style={{
+                                background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.accent})`,
+                                boxShadow: `0 2px 10px ${moduleTheme.primary}30`,
+                              }}
                             >
-                              <FileDown size={11} />
-                              {tMT.exportPDF}
+                              <FileDown size={11} className="relative z-10" />
+                              <span className="relative z-10">{tMT.exportPDF}</span>
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
                             </motion.button>
                             <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: moduleTheme.accent }} />
                           </div>

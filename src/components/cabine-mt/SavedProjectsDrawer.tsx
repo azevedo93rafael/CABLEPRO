@@ -62,7 +62,7 @@ export function SavedProjectsDrawer({
           <div className="flex items-center gap-2">
             <FolderOpen size={16} style={{ color: moduleTheme.accent }} />
             <p className="text-[10px] font-black uppercase tracking-widest dark:text-white">
-              Banco de Projetos
+              {t.savedProjects}
             </p>
           </div>
           <button
@@ -80,10 +80,10 @@ export function SavedProjectsDrawer({
               <Folder size={40} className="opacity-10 dark:text-white" />
               <div>
                 <p className="text-[11px] font-black uppercase tracking-widest opacity-30 dark:text-white mb-1">
-                  Nessun progetto salvato
+                  {t.noSavedProjects}
                 </p>
                 <p className="text-[9px] opacity-20 dark:text-white">
-                  Clicca SALVA nel header per salvare il progetto corrente.
+                  {t.clickSaveHint}
                 </p>
               </div>
             </div>

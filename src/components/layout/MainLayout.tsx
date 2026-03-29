@@ -25,10 +25,13 @@ interface MainLayoutProps {
   customStructures: StandardStructure[];
 }
 
-function NavItem({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) {
+function NavItem({ icon, label, active = false, onClick, accentColor = '#81292C' }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void, accentColor?: string }) {
   return (
     <div className={`flex items-center gap-3 px-3 py-2 rounded cursor-pointer transition-all border border-transparent hover:border-white/10`} onClick={onClick}>
-      <div className={`p-2 rounded ${active ? 'bg-white text-[#81292C]' : 'bg-white/5 text-white/60'}`}>
+      <div 
+        className={`p-2 rounded ${active ? 'bg-white' : 'bg-white/5 text-white/60'}`}
+        style={active ? { color: accentColor } : {}}
+      >
         {icon}
       </div>
       <span className={`text-[10px] font-bold tracking-wider uppercase ${active ? 'text-white' : 'text-white/60'}`}>{label}</span>
@@ -66,7 +69,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   if (!activeProject) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] dark:bg-[#0a0a0a]">
-        <div className="text-sm font-bold text-[#81292C] animate-pulse">CARREGANDO PROJETO...</div>
+        <div className="text-sm font-bold animate-pulse" style={{ color: moduleTheme.accent }}>CARICAMENTO PROGETTO...</div>
       </div>
     );
   }
@@ -82,17 +85,18 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           <Logo className="w-10 h-10 text-white dark:text-[#6A1B1B]" />
           <div>
             <h1 className="text-sm font-bold tracking-wider">CABLEFILL PRO</h1>
-            <p className="text-[10px] opacity-50">{t.sidebar.appSubtitle}</p>
+            <p className="text-[10px] opacity-50">SISTEMA DI INGEGNERIA</p>
           </div>
         </div>
 
         <div className="px-6 py-4 border-b border-white/10">
           <button 
             onClick={() => setActiveModule(null)}
-            className="w-full flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-all text-[10px] font-bold uppercase tracking-widest"
+            className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-[10px] font-bold uppercase tracking-widest relative overflow-hidden group"
           >
-            <ChevronLeft size={14} />
-            Torna al Selettore
+            <ChevronLeft size={14} className="group-hover:-translate-x-1 transition-transform" />
+            {t.cabineMT.back}
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
           </button>
         </div>
 
@@ -105,24 +109,28 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 label={t.sidebar.overview} 
                 active={activeTab === 'dashboard'} 
                 onClick={() => setActiveTab('dashboard')}
+                accentColor={moduleTheme.accent}
               />
               <NavItem 
                 icon={<Layers size={18} />} 
                 label={t.sidebar.cableTrays} 
                 active={activeTab === 'trays'} 
                 onClick={() => setActiveTab('trays')}
+                accentColor={moduleTheme.accent}
               />
               <NavItem 
                 icon={<CircleDot size={18} />} 
                 label={t.sidebar.conduits} 
                 active={activeTab === 'conduits'} 
                 onClick={() => setActiveTab('conduits')}
+                accentColor={moduleTheme.accent}
               />
               <NavItem 
                 icon={<Zap size={18} />} 
                 label={t.sidebar.cables} 
                 active={activeTab === 'cables'} 
                 onClick={() => setActiveTab('cables')}
+                accentColor={moduleTheme.accent}
               />
               {user?.role === 'admin' && (
                 <NavItem 
@@ -130,6 +138,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                   label={t.userManagement.title} 
                   active={activeTab === 'users'} 
                   onClick={() => setActiveTab('users')}
+                  accentColor={moduleTheme.accent}
                 />
               )}
             </div>
@@ -143,6 +152,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 label={t.sidebar.database} 
                 active={activeTab === 'database'} 
                 onClick={() => setActiveTab('database')}
+                accentColor={moduleTheme.accent}
               />
             </div>
           </div>
@@ -166,7 +176,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
           <button 
             onClick={() => setIsShortcutsModalOpen(true)}
             className="p-2 hover:bg-white/10 rounded-full transition-colors text-white/40 hover:text-white flex-shrink-0"
-            title="Atalhos de Teclado"
+            title={t.misc.keyboardShortcuts}
           >
             <Keyboard size={18} />
           </button>
@@ -240,10 +250,15 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
 
             <button 
               onClick={() => saveProject(showToast, t)}
-              className="px-6 py-2 border border-black/10 dark:border-white/10 rounded text-[10px] font-bold hover:bg-black/5 dark:hover:bg-white/5 active:scale-95 transition-all flex items-center gap-2 dark:text-white"
+              className="relative px-6 py-2.5 rounded-xl text-[10px] font-bold text-white active:scale-95 transition-all flex items-center gap-2 overflow-hidden group"
+              style={{
+                background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.accent})`,
+                boxShadow: `0 4px 15px ${moduleTheme.primary}40`,
+              }}
             >
-              <Save size={14} className="text-[#81292C]" />
-              {t.preview.saveProject}
+              <Save size={14} className="relative z-10" />
+              <span className="relative z-10">{t.preview.saveProject}</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
             </button>
 
             <div id="export-portal" className="flex items-center"></div>
@@ -262,9 +277,10 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                 <div 
                   className={`px-6 py-4 transition-all relative flex items-center gap-2 ${
                     activeProjectId === p.id 
-                      ? 'text-[#81292C]' 
+                      ? 'text-[var(--module-accent)]' 
                       : 'text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white'
                   }`}
+                  style={{ '--module-accent': moduleTheme.accent } as React.CSSProperties}
                 >
                   {activeProjectId === p.id ? (
                     <input 
@@ -285,16 +301,18 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
                   {activeProjectId === p.id && (
                     <motion.div 
                       layoutId="activeProjectTab"
-                      className="absolute bottom-0 left-0 w-full h-[2px] bg-[#81292C] z-10"
+                      className="absolute bottom-0 left-0 w-full h-[2px] z-10"
+                      style={{ backgroundColor: moduleTheme.accent }}
                     />
                   )}
                 </div>
                 {projects.length > 1 && (
                   <button 
                     onClick={() => deleteProject(p.id)}
-                    className={`p-1.5 text-[#81292C] transition-all rounded hover:bg-[#81292C]/10 ${
+                    className={`p-1.5 transition-all rounded hover:bg-white/10 ${
                       activeProjectId === p.id ? 'opacity-100 mr-2' : 'opacity-0 group-hover:opacity-100'
                     }`}
+                    style={{ color: moduleTheme.accent }}
                   >
                     <X size={12} />
                   </button>
@@ -303,10 +321,14 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             ))}
             <button 
               onClick={() => addNewProject(t)}
-              className="p-4 text-black/40 dark:text-white/40 hover:text-[#81292C] transition-colors"
+              className="p-4 rounded-xl text-white/60 hover:text-white transition-all relative overflow-hidden group"
+              style={{
+                background: `linear-gradient(135deg, ${moduleTheme.primary}80, ${moduleTheme.accent}80)`,
+              }}
               title={t.preview.newProject}
             >
-              <Plus size={18} />
+              <Plus size={18} className="relative z-10" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
             </button>
           </div>
         </div>

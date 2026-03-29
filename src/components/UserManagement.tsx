@@ -14,6 +14,7 @@ import { supabase, supabaseAdmin } from '../lib/supabase';
 import { Translation } from '../types';
 import { ConfirmModal } from './ConfirmModal';
 import { motion, AnimatePresence } from 'motion/react';
+import { useApp } from '../context/AppContext';
 
 interface UserManagementProps {
   t: Translation;
@@ -21,6 +22,7 @@ interface UserManagementProps {
 }
 
 export function UserManagement({ t, showToast }: UserManagementProps) {
+  const { moduleTheme } = useApp();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
@@ -217,7 +219,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#81292C]"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: moduleTheme.accent }}></div>
       </div>
     );
   }
@@ -234,7 +236,8 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
           </div>
           <button
             onClick={() => setShowNewUserForm(!showNewUserForm)}
-            className="flex items-center gap-2 bg-[#81292C] text-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-[#6A2023] transition-colors"
+            className="flex items-center gap-2 text-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:opacity-90 transition-colors"
+            style={{ backgroundColor: moduleTheme.accent }}
           >
             <Plus size={14} />
             {t.userManagement.newUser}
@@ -250,14 +253,19 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
               placeholder={t.userManagement.searchPlaceholder}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white dark:bg-[#141414] border border-black/10 dark:border-white/10 pl-10 pr-4 py-2 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-[#81292C] transition-all dark:text-white"
+              className="w-full bg-white dark:bg-[#141414] border border-black/10 dark:border-white/10 pl-10 pr-4 py-2 text-[10px] font-bold uppercase tracking-widest outline-none transition-all dark:text-white"
+              style={{ '--focus-color': moduleTheme.accent } as React.CSSProperties}
+              onFocus={(e) => e.target.style.borderColor = moduleTheme.accent}
+              onBlur={(e) => e.target.style.borderColor = ''}
             />
           </div>
           <div className="flex gap-4">
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="bg-white dark:bg-[#141414] border border-black/10 dark:border-white/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest outline-none focus:border-[#81292C] transition-all dark:text-white cursor-pointer"
+              className="bg-white dark:bg-[#141414] border border-black/10 dark:border-white/10 px-4 py-2 text-[10px] font-bold uppercase tracking-widest outline-none transition-all dark:text-white cursor-pointer"
+              onFocus={(e) => e.currentTarget.style.borderColor = moduleTheme.accent}
+              onBlur={(e) => e.currentTarget.style.borderColor = ''}
             >
               <option value="all">{t.userManagement.allRoles}</option>
               <option value="admin">Admin</option>
@@ -278,7 +286,10 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                     required
                     value={newUserForm.name}
                     onChange={(e) => setNewUserForm(prev => ({ ...prev, name: e.target.value }))}
-                    className={`w-full bg-[#efefef] dark:bg-white/5 border px-3 py-2 text-xs font-bold outline-none dark:text-white focus:border-[#81292C] transition-colors ${newUserForm.name.trim().length === 0 && newUserForm.name !== '' ? 'border-red-500' : 'border-black/5 dark:border-white/5'}`}
+                    className="w-full bg-[#efefef] dark:bg-white/5 border px-3 py-2 text-xs font-bold outline-none dark:text-white transition-colors"
+                    style={{ borderColor: newUserForm.name.trim().length === 0 && newUserForm.name !== '' ? '#ef4444' : undefined }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = moduleTheme.accent}
+                    onBlur={(e) => e.currentTarget.style.borderColor = newUserForm.name.trim().length === 0 && newUserForm.name !== '' ? '#ef4444' : ''}
                   />
                 </div>
                 <div>
@@ -288,7 +299,10 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                     required
                     value={newUserForm.email}
                     onChange={(e) => setNewUserForm(prev => ({ ...prev, email: e.target.value }))}
-                    className={`w-full bg-[#efefef] dark:bg-white/5 border px-3 py-2 text-xs font-bold outline-none dark:text-white focus:border-[#81292C] transition-colors ${!newUserForm.email.includes('@') && newUserForm.email !== '' ? 'border-red-500' : 'border-black/5 dark:border-white/5'}`}
+                    className="w-full bg-[#efefef] dark:bg-white/5 border px-3 py-2 text-xs font-bold outline-none dark:text-white transition-colors"
+                    style={{ borderColor: !newUserForm.email.includes('@') && newUserForm.email !== '' ? '#ef4444' : undefined }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = moduleTheme.accent}
+                    onBlur={(e) => e.currentTarget.style.borderColor = !newUserForm.email.includes('@') && newUserForm.email !== '' ? '#ef4444' : ''}
                   />
                 </div>
                 <div>
@@ -298,7 +312,10 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                     required
                     value={newUserForm.password}
                     onChange={(e) => setNewUserForm(prev => ({ ...prev, password: e.target.value }))}
-                    className={`w-full bg-[#efefef] dark:bg-white/5 border px-3 py-2 text-xs font-bold outline-none dark:text-white focus:border-[#81292C] transition-colors ${newUserForm.password.length < 1 && newUserForm.password !== '' ? 'border-red-500' : 'border-black/5 dark:border-white/5'}`}
+                    className="w-full bg-[#efefef] dark:bg-white/5 border px-3 py-2 text-xs font-bold outline-none dark:text-white transition-colors"
+                    style={{ borderColor: newUserForm.password.length < 1 && newUserForm.password !== '' ? '#ef4444' : undefined }}
+                    onFocus={(e) => e.currentTarget.style.borderColor = moduleTheme.accent}
+                    onBlur={(e) => e.currentTarget.style.borderColor = newUserForm.password.length < 1 && newUserForm.password !== '' ? '#ef4444' : ''}
                   />
                   {newUserForm.password.length < 1 && newUserForm.password !== '' && (
                     <p className="text-[10px] text-red-500 mt-1">{t.userManagement.passwordRequired}</p>
@@ -309,7 +326,9 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                   <select
                     value={newUserForm.role}
                     onChange={(e) => setNewUserForm(prev => ({ ...prev, role: e.target.value }))}
-                    className="w-full bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/5 px-3 py-2 text-xs font-bold outline-none dark:text-white focus:border-[#81292C]"
+                    className="w-full bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/5 px-3 py-2 text-xs font-bold outline-none dark:text-white"
+                    onFocus={(e) => e.currentTarget.style.borderColor = moduleTheme.accent}
+                    onBlur={(e) => e.currentTarget.style.borderColor = ''}
                   >
                     <option value="user" className="dark:bg-[#141414]">USER</option>
                     <option value="admin" className="dark:bg-[#141414]">ADMIN</option>
@@ -323,30 +342,24 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                   <button
                     type="button"
                     onClick={() => toggleModule('cablefill', true)}
-                    className={`flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all ${newUserForm.accessible_modules.includes('cablefill')
-                      ? 'bg-[#81292C] text-white border-[#81292C]'
-                      : 'bg-transparent text-[#5a5a5a] border-black/10 dark:text-white/60 dark:border-white/10'
-                      }`}
+                    className="flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all"
+                    style={newUserForm.accessible_modules.includes('cablefill') ? { backgroundColor: moduleTheme.accent, borderColor: moduleTheme.accent, color: 'white' } : { borderColor: '' }}
                   >
                     CableFill Pro
                   </button>
                   <button
                     type="button"
                     onClick={() => toggleModule('capitolato', true)}
-                    className={`flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all ${newUserForm.accessible_modules.includes('capitolato')
-                      ? 'bg-[#81292C] text-white border-[#81292C]'
-                      : 'bg-transparent text-[#5a5a5a] border-black/10 dark:text-white/60 dark:border-white/10'
-                      }`}
+                    className="flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all"
+                    style={newUserForm.accessible_modules.includes('capitolato') ? { backgroundColor: moduleTheme.accent, borderColor: moduleTheme.accent, color: 'white' } : { borderColor: '' }}
                   >
                     Capitolato Pro
                   </button>
                   <button
                     type="button"
                     onClick={() => toggleModule('cabine-mt', true)}
-                    className={`flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all ${newUserForm.accessible_modules.includes('cabine-mt')
-                      ? 'bg-[#81292C] text-white border-[#81292C]'
-                      : 'bg-transparent text-[#5a5a5a] border-black/10 dark:text-white/60 dark:border-white/10'
-                      }`}
+                    className="flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all"
+                    style={newUserForm.accessible_modules.includes('cabine-mt') ? { backgroundColor: moduleTheme.accent, borderColor: moduleTheme.accent, color: 'white' } : { borderColor: '' }}
                   >
                     Cabine MT
                   </button>
@@ -354,7 +367,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
               </div>
 
               {createError && (
-                <div className="text-[#81292C] text-xs font-bold bg-[#81292C]/10 p-3">
+                <div className="text-xs font-bold p-3" style={{ color: moduleTheme.accent, backgroundColor: `${moduleTheme.accent}10` }}>
                   {createError}
                 </div>
               )}
@@ -370,7 +383,8 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                 <button
                   type="submit"
                   disabled={creatingUser || newUserForm.name.trim().length === 0 || !newUserForm.email.includes('@') || newUserForm.password.length < 6}
-                  className="bg-[#81292C] text-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest hover:bg-[#6A2023] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="text-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  style={{ backgroundColor: moduleTheme.accent }}
                 >
                   {creatingUser ? (
                     <div className="w-3 h-3 border-2 border-white border-t-transparent animate-spin rounded-full" />
@@ -426,7 +440,9 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                             type="text"
                             value={editForm.name}
                             onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/5 px-2 py-1 text-[10px] font-bold outline-none dark:text-white focus:border-[#81292C]"
+                            className="w-full bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/5 px-2 py-1 text-[10px] font-bold outline-none dark:text-white"
+                            onFocus={(e) => e.currentTarget.style.borderColor = moduleTheme.accent}
+                            onBlur={(e) => e.currentTarget.style.borderColor = ''}
                           />
                         ) : (
                           u.name || u.full_name || u.nome || u.display_name || u.username || u.nome_completo || u.email.split('@')[0].toUpperCase()
@@ -438,7 +454,9 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                           <select
                             value={editForm.role}
                             onChange={(e) => setEditForm(prev => ({ ...prev, role: e.target.value }))}
-                            className="bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/5 px-2 py-1 text-[10px] font-bold outline-none dark:text-white focus:border-[#81292C]"
+                            className="bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/5 px-2 py-1 text-[10px] font-bold outline-none dark:text-white"
+                            onFocus={(e) => e.currentTarget.style.borderColor = moduleTheme.accent}
+                            onBlur={(e) => e.currentTarget.style.borderColor = ''}
                           >
                             <option value="user" className="dark:bg-[#141414]">USER</option>
                             <option value="admin" className="dark:bg-[#141414]">ADMIN</option>
@@ -453,30 +471,24 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                             <button
                               type="button"
                               onClick={() => toggleModule('cablefill')}
-                              className={`px-2 py-1 text-[8px] font-bold uppercase border transition-all ${editForm.accessible_modules.includes('cablefill')
-                                ? 'bg-[#81292C] text-white border-[#81292C]'
-                                : 'bg-transparent text-[#5a5a5a] border-black/10 dark:text-white/60 dark:border-white/10'
-                                }`}
+                              className="px-2 py-1 text-[8px] font-bold uppercase border transition-all"
+                              style={editForm.accessible_modules.includes('cablefill') ? { backgroundColor: moduleTheme.accent, color: 'white', borderColor: moduleTheme.accent } : { borderColor: '' }}
                             >
                               CF
                             </button>
                             <button
                               type="button"
                               onClick={() => toggleModule('capitolato')}
-                              className={`px-2 py-1 text-[8px] font-bold uppercase border transition-all ${editForm.accessible_modules.includes('capitolato')
-                                ? 'bg-[#81292C] text-white border-[#81292C]'
-                                : 'bg-transparent text-[#5a5a5a] border-black/10 dark:text-white/60 dark:border-white/10'
-                                }`}
+                              className="px-2 py-1 text-[8px] font-bold uppercase border transition-all"
+                              style={editForm.accessible_modules.includes('capitolato') ? { backgroundColor: moduleTheme.accent, color: 'white', borderColor: moduleTheme.accent } : { borderColor: '' }}
                             >
                               CP
                             </button>
                             <button
                               type="button"
                               onClick={() => toggleModule('cabine-mt')}
-                              className={`px-2 py-1 text-[8px] font-bold uppercase border transition-all ${editForm.accessible_modules.includes('cabine-mt')
-                                ? 'bg-[#81292C] text-white border-[#81292C]'
-                                : 'bg-transparent text-[#5a5a5a] border-black/10 dark:text-white/60 dark:border-white/10'
-                                }`}
+                              className="px-2 py-1 text-[8px] font-bold uppercase border transition-all"
+                              style={editForm.accessible_modules.includes('cabine-mt') ? { backgroundColor: moduleTheme.accent, color: 'white', borderColor: moduleTheme.accent } : { borderColor: '' }}
                             >
                               CMT
                             </button>
@@ -515,7 +527,10 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                             <button
                               type="button"
                               onClick={() => setEditingUserId(null)}
-                              className="text-[#81292C] p-2 hover:bg-[#81292C]/10 rounded transition-all"
+                              className="p-2 rounded transition-all"
+                              style={{ color: moduleTheme.accent }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${moduleTheme.accent}15`}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                               title={t.management.cancel}
                             >
                               <X size={16} />
@@ -534,7 +549,10 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                             )}
                             <button
                               onClick={() => handleEdit(u)}
-                              className="text-[#5a5a5a] dark:text-white/60 p-2 hover:bg-black/10 dark:hover:bg-white/10 rounded transition-all"
+                              className="p-2 rounded transition-all"
+                              style={{ color: moduleTheme.accent }}
+                              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = `${moduleTheme.accent}15`}
+                              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                               title={t.management.edit}
                             >
                               <Edit2 size={16} />
@@ -542,7 +560,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                             {u.email !== 'rafael.azevedo.93@live.com' && (
                               <button
                                 onClick={() => handleDeleteClick(u.id)}
-                                className="text-[#81292C] p-2 hover:bg-[#81292C]/10 rounded transition-all"
+                                className="p-2 rounded transition-all text-red-500 hover:bg-red-500/10"
                                 title={t.userManagement.delete}
                               >
                                 <Trash2 size={16} />
