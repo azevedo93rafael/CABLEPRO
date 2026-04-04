@@ -79,16 +79,20 @@ export function VentilationTab({
             <div className="px-5 py-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
               <p className="text-[9px] font-black tracking-widest uppercase dark:text-white flex items-center gap-2">
                 <Zap size={12} style={{ color: moduleTheme.accent }} />
-                ELEMENTOS TÉRMICOS (FONTES DE CALOR)
+                {t.thermalElementsTitle}
               </p>
               <button
                 id="cmt-add-element"
                 onClick={() => { setEditingElement(null); setShowModal(true); }}
-                className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-white px-3 py-1.5 transition-opacity hover:opacity-90"
-                style={{ backgroundColor: moduleTheme.accent }}
+                className="relative flex items-center gap-2 text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all rounded-xl overflow-hidden group shadow-lg active:scale-95"
+                style={{
+                  background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.accent})`,
+                  boxShadow: `0 4px 15px ${moduleTheme.primary}40`,
+                }}
               >
-                <Plus size={12} />
-                ADICIONAR
+                <Plus size={14} className="relative z-10" />
+                <span className="relative z-10">{t.addBtn}</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
               </button>
             </div>
 
@@ -97,7 +101,7 @@ export function VentilationTab({
                 {elements.length === 0 ? (
                   <div className="p-8 text-center">
                     <p className="text-[10px] font-bold opacity-30 dark:text-white uppercase tracking-widest">
-                      NENHUM ELEMENTO ADICIONADO
+                      {t.noneAddedMsg}
                     </p>
                   </div>
                 ) : (
@@ -110,11 +114,19 @@ export function VentilationTab({
                       className="flex items-center gap-3 px-4 py-3 group"
                     >
                       <div className="flex-shrink-0">
-                        {el.type === 'transformer' ? (
-                          <Zap size={14} className="text-amber-500" />
-                        ) : (
-                          <LayoutDashboard size={14} className="text-blue-500" />
-                        )}
+                        <div 
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border transition-transform duration-300 group-hover:scale-110 ${
+                            el.type === 'transformer' 
+                              ? 'bg-gradient-to-br from-amber-500/20 to-orange-500/20 border-amber-500/20 dark:border-amber-500/30' 
+                              : 'bg-gradient-to-br from-blue-500/20 to-indigo-500/20 border-blue-500/20 dark:border-blue-500/30'
+                          }`}
+                        >
+                          {el.type === 'transformer' ? (
+                            <Zap size={18} className="text-amber-600 dark:text-amber-400 drop-shadow-[0_0_8px_rgba(217,119,6,0.3)]" />
+                          ) : (
+                            <LayoutDashboard size={18} className="text-blue-600 dark:text-blue-400 drop-shadow-[0_0_8px_rgba(37,99,235,0.3)]" />
+                          )}
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-[11px] font-bold dark:text-white truncate">{el.label}</p>
@@ -124,14 +136,14 @@ export function VentilationTab({
                             <>
                               {el.powerKVA} kVA{' '}
                               <span style={{ color: moduleTheme.accent }}>
-                                (Perdas: {formatPower(calcTrafoLossPerUnit(el))})
+                                ({t.losses}: {formatPower(calcTrafoLossPerUnit(el))})
                               </span>
                             </>
                           ) : (
                             <>
-                              Quadro ({el.numColumns} col.){' '}
+                              {t.switchboardTag} ({el.numColumns} {t.columns}){' '}
                               <span style={{ color: moduleTheme.accent }}>
-                                (Dissipação: {formatPower((el.numColumns ?? 0) * 0.15)}/un)
+                                ({t.dissipationPerUnit}: {formatPower((el.numColumns ?? 0) * 0.15)}/un)
                               </span>
                             </>
                           )}
@@ -205,11 +217,15 @@ export function VentilationTab({
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     onClick={() => setShowReport(true)}
-                    className="flex items-center gap-1.5 text-white px-3 py-1.5 text-[9px] font-bold uppercase tracking-widest transition-opacity hover:opacity-90 shadow-md shadow-black/10"
-                    style={{ backgroundColor: moduleTheme.accent }}
+                    className="relative flex items-center gap-2 text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all rounded-xl overflow-hidden group shadow-lg active:scale-95"
+                    style={{
+                      background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.accent})`,
+                      boxShadow: `0 4px 15px ${moduleTheme.primary}40`,
+                    }}
                   >
-                    <FileDown size={12} />
-                    {t.exportPDF}
+                    <FileDown size={14} className="relative z-10" />
+                    <span className="relative z-10">{t.exportPDF}</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                   </motion.button>
                 )}
               </div>

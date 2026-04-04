@@ -18,6 +18,7 @@ const DEFAULT_INPUTS: CabineMTInputs = {
   shortCircuitVoltagePct: 6,
   faultTimeS: 1,
   conductorMaterial: 'copper',
+  localTI: { quantidade_racks: 0 }
 };
 
 function newProject(name: string): CabineMTProject {
@@ -41,6 +42,7 @@ interface CabineMTContextType {
   updateInputs: (inputs: CabineMTInputs) => void;
   updateCabineDimensions: (dims: CabineDimensions) => void;
   updateElements: (elements: VentilationElement[]) => void;
+  updateLocalTI: (localTI: { quantidade_racks: number }) => void;
   saveProject: (showToast: (msg: string, type: 'success' | 'error') => void, t: any) => Promise<void>;
   addNewProject: (t: any) => void;
   deleteProject: (id: string) => void;
@@ -126,6 +128,9 @@ export const CabineMTProvider = ({ children }: { children: ReactNode }) => {
     updateActiveProject({ cabineDimensions });
   const updateElements = (elements: VentilationElement[]) =>
     updateActiveProject({ elements });
+  const updateLocalTI = (localTI: { quantidade_racks: number }) => {
+    updateInputs({ ...activeProject.inputs, localTI });
+  };
 
   const saveProject = async (
     showToast: (msg: string, type: 'success' | 'error') => void,
@@ -216,6 +221,7 @@ export const CabineMTProvider = ({ children }: { children: ReactNode }) => {
         updateInputs,
         updateCabineDimensions,
         updateElements,
+        updateLocalTI,
         saveProject,
         addNewProject,
         deleteProject,

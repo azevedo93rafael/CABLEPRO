@@ -15,10 +15,22 @@ interface AddElementModalProps {
 const INPUT_CLASS =
   'w-full bg-[#efefef] dark:bg-white/5 border border-black/10 dark:border-white/10 px-3 py-2 text-xs font-bold outline-none dark:text-white transition-colors font-mono';
 
-const TYPE_OPTIONS: { type: VentilationElementType; icon: React.ReactNode; label: string }[] = [
-  { type: 'transformer', icon: <Zap size={14} />, label: 'Transformador' },
-  { type: 'switchboard', icon: <LayoutDashboard size={14} />, label: 'Quadro (MT/BT)' },
+const TYPE_OPTIONS: (t: any) => { type: VentilationElementType; icon: React.ReactNode; label: string }[] = (t) => [
+  { type: 'transformer', icon: <Zap size={14} />, label: t.transformerType },
+  { type: 'switchboard', icon: <LayoutDashboard size={14} />, label: t.switchboardType },
 ];
+
+// Helper to get translated labels based on current language
+const getTypeLabel = (type: VentilationElementType, t: any) => {
+  if (type === 'transformer') return t.transformerType;
+  if (type === 'switchboard') return t.switchboardType;
+  return 'Element';
+};
+
+const getPlaceholder = (type: VentilationElementType, t: any) => {
+  if (type === 'transformer') return `Ex: ${t.transformerType.charAt(0)}1`;
+  return `Ex: ${t.switchboardType.split(' ')[0]}`;
+};
 
 export function AddElementModal({
   t,
@@ -56,10 +68,10 @@ export function AddElementModal({
   // Update default label when type changes (if adding new)
   useEffect(() => {
     if (!editingElement) {
-      if (selectedType === 'transformer') setLabel('TR1');
-      if (selectedType === 'switchboard') setLabel('QGBT Principal');
+      if (selectedType === 'transformer') setLabel(`${t.transformerType.charAt(0)}1`);
+      if (selectedType === 'switchboard') setLabel(`${t.switchboardType.split(' ')[0]} 1`);
     }
-  }, [selectedType, editingElement]);
+  }, [selectedType, editingElement, t]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,10 +137,10 @@ export function AddElementModal({
             {!editingElement && (
               <div>
                 <label className="block text-[10px] font-bold opacity-40 uppercase tracking-widest mb-2 dark:text-white">
-                  Tipo de Elemento
+                  {t.chooseElementType}
                 </label>
                 <div className="flex gap-2 p-1 bg-black/5 dark:bg-white/5 rounded min-h-[40px]">
-                  {TYPE_OPTIONS.map((opt) => {
+                  {TYPE_OPTIONS(t).map((opt) => {
                     const isSelected = selectedType === opt.type;
                     return (
                       <button
@@ -152,7 +164,7 @@ export function AddElementModal({
 
             <div>
               <label className="block text-[10px] font-bold opacity-40 uppercase tracking-widest mb-1.5 dark:text-white">
-                Nomenclatura / Tag
+                {t.elementLabel}
               </label>
               <input
                 type="text"
@@ -161,7 +173,7 @@ export function AddElementModal({
                 onChange={(e) => setLabel(e.target.value)}
                 className={INPUT_CLASS}
                 style={{ '--tw-ring-color': moduleTheme.accent } as React.CSSProperties}
-                placeholder={selectedType === 'transformer' ? "Ex: TR1" : "Ex: QGBT"}
+                placeholder={getPlaceholder(selectedType, t)}
               />
             </div>
 
@@ -184,7 +196,7 @@ export function AddElementModal({
               {selectedType === 'transformer' && (
                 <div>
                   <label className="block text-[10px] font-bold opacity-40 uppercase tracking-widest mb-1.5 dark:text-white">
-                    Potência (kVA)
+                    {t.powerKVA}
                   </label>
                   <input
                     type="number"
@@ -202,7 +214,7 @@ export function AddElementModal({
               {selectedType === 'switchboard' && (
                 <div>
                   <label className="block text-[10px] font-bold opacity-40 uppercase tracking-widest mb-1.5 dark:text-white">
-                    Número de Colunas/Células
+                    {t.numColumnsLabel}
                   </label>
                   <input
                     type="number"
@@ -220,7 +232,7 @@ export function AddElementModal({
             {selectedType === 'transformer' && (
               <div>
                 <label className="block text-[10px] font-bold opacity-40 uppercase tracking-widest mb-1.5 dark:text-white">
-                  Perdas Térmicas (kW) — <span className="opacity-60">Opcional</span>
+                  {t.nominalCurrentOptional || t.losses} (kW)
                 </label>
                 <input
                   type="number"
@@ -230,17 +242,19 @@ export function AddElementModal({
                   onChange={(e) => setPerdasKW(parseFloat(e.target.value) || '')}
                   className={INPUT_CLASS}
                   style={{ '--tw-ring-color': moduleTheme.accent } as React.CSSProperties}
-                  placeholder="Se vazio, estima-se 2,5% do kVA"
+                  placeholder={t.lossesEstimateMsg}
                 />
-                <p className="text-[9px] opacity-40 mt-1.5 dark:text-white">
-                  Dado de datasheet. Se vazio, o motor de cálculo usará uma estimativa paramétrica de 2,5% da potência nominal.
-                </p>
+                {t.nominalCurrentOptional && (
+                  <p className="text-[9px] opacity-40 mt-1.5 dark:text-white">
+                     {t.nominalCurrentOptional}
+                  </p>
+                )}
               </div>
             )}
             
             {selectedType === 'switchboard' && (
               <p className="text-[9px] opacity-40 mt-1 dark:text-white">
-                O motor paramétrico calcula a dissipação de quadros assumindo uma constante normativa de 0.15 kW por coluna/célula instalada.
+                {t.parametricCalcMsg}
               </p>
             )}
 
@@ -262,7 +276,7 @@ export function AddElementModal({
             style={{ backgroundColor: moduleTheme.accent }}
           >
             <Check size={14} />
-            {editingElement ? 'SALVAR' : 'ADICIONAR'}
+            {editingElement ? (t.editElement) : (t.addBtn)}
           </button>
         </div>
       </motion.div>

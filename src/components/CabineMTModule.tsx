@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Zap, ChevronLeft, FileDown, Save, Plus, X,
   Sun, Moon, Globe, Folder, LogOut,
-  Layers, Wind, Keyboard,
+  Layers, Wind, Keyboard, Server,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,7 @@ import { calculateCabineMT } from '../utils/cabineMTCalculations';
 import { InputPanel } from './cabine-mt/InputPanel';
 import { ResultsPanel } from './cabine-mt/ResultsPanel';
 import { VentilationTab } from './cabine-mt/VentilationTab';
+import LocalTITab from './cabine-mt/LocalTITab';
 import { SavedProjectsDrawer } from './cabine-mt/SavedProjectsDrawer';
 import { CabineMTReport } from './cabine-mt/CabineMTReport';
 import { Logo } from './Logo';
@@ -26,7 +27,7 @@ interface CabineMTModuleProps {
   showToast: (msg: string, type: 'success' | 'error') => void;
 }
 
-type ActiveTab = 'grounding' | 'ventilation';
+type ActiveTab = 'grounding' | 'ventilation' | 'local-ti';
 
 // ── Sidebar NavItem (identical pattern to MainLayout) ─────────────────────────
 function NavItem({
@@ -146,6 +147,13 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                 onClick={() => setActiveTab('ventilation')}
                 accentColor={moduleTheme.accent}
               />
+              <NavItem
+                icon={<Server size={16} />}
+                label={tMT.localTITab}
+                active={activeTab === 'local-ti'}
+                onClick={() => setActiveTab('local-ti')}
+                accentColor={moduleTheme.accent}
+              />
             </div>
           </div>
         </nav>
@@ -207,7 +215,7 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
             </div>
             <div>
               <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
-                {activeTab === 'grounding' ? tMT.groundingTab : tMT.ventilationTab}
+                {activeTab === 'grounding' ? tMT.groundingTab : activeTab === 'ventilation' ? tMT.ventilationTab : tMT.localTITab}
               </p>
               <h2 className="text-[11px] font-bold uppercase tracking-tight dark:text-white">
                 {tMT.moduleName}
@@ -264,7 +272,7 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 id="cmt-export-pdf"
                 onClick={() => setShowReport(true)}
-                className="relative flex items-center gap-2 text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all rounded-xl overflow-hidden group"
+                className="relative flex items-center gap-2 text-white px-5 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all rounded-xl overflow-hidden group shadow-lg active:scale-95"
                 style={{
                   background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.accent})`,
                   boxShadow: `0 4px 15px ${moduleTheme.primary}40`,
@@ -362,7 +370,7 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
         <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f5f5f5] dark:bg-[#0a0a0a] transition-colors">
           <div className="p-6 h-full">
             <AnimatePresence mode="wait">
-              {activeTab === 'grounding' ? (
+                  {activeTab === 'grounding' ? (
                 <motion.div
                   key="grounding"
                   initial={{ opacity: 0, x: -12 }}
@@ -392,9 +400,9 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                   </div>
 
                   {/* Results Panel */}
-                  <div className="flex-1">
-                    <div className="bg-white dark:bg-[#141414] border border-black/5 dark:border-white/5 shadow-xl shadow-black/5 h-full flex flex-col">
-                      <div className="px-5 py-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between">
+                  <div className="flex-1 min-h-0">
+                    <div className="bg-white dark:bg-[#141414] border border-black/5 dark:border-white/5 shadow-xl shadow-black/5 h-full flex flex-col overflow-hidden rounded-3xl">
+                      <div className="px-5 py-4 border-b border-black/5 dark:border-white/5 flex items-center justify-between shrink-0">
                         <p className="text-[9px] font-black tracking-widest uppercase dark:text-white">
                           {tMT.results}
                         </p>
@@ -405,27 +413,27 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                               initial={{ scale: 0 }}
                               animate={{ scale: 1 }}
                               onClick={() => setShowReport(true)}
-                              className="relative flex items-center gap-1.5 text-white px-4 py-2 text-[9px] font-bold uppercase tracking-widest transition-all rounded-lg overflow-hidden group"
+                              className="relative flex items-center gap-2 text-white px-4 py-2 text-[10px] font-bold uppercase tracking-widest transition-all rounded-xl overflow-hidden group shadow-lg active:scale-95"
                               style={{
                                 background: `linear-gradient(135deg, ${moduleTheme.primary}, ${moduleTheme.accent})`,
-                                boxShadow: `0 2px 10px ${moduleTheme.primary}30`,
+                                boxShadow: `0 4px 15px ${moduleTheme.primary}40`,
                               }}
                             >
-                              <FileDown size={11} className="relative z-10" />
+                              <FileDown size={14} className="relative z-10" />
                               <span className="relative z-10">{tMT.exportPDF}</span>
-                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
+                              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                             </motion.button>
                             <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: moduleTheme.accent }} />
                           </div>
                         )}
                       </div>
-                      <div className="p-5 flex-1 flex flex-col">
+                      <div className="p-5 flex-1 min-h-0 flex flex-col">
                         <ResultsPanel t={tMT} results={results} />
                       </div>
                     </div>
                   </div>
                 </motion.div>
-              ) : (
+              ) : activeTab === 'ventilation' ? (
                 <motion.div
                   key="ventilation"
                   initial={{ opacity: 0, x: 12 }}
@@ -444,6 +452,17 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                     onUpdateElements={updateElements}
                     onUpdateDimensions={updateCabineDimensions}
                   />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="local-ti"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+                  className="flex flex-col h-full overflow-y-auto"
+                >
+                  <LocalTITab />
                 </motion.div>
               )}
             </AnimatePresence>

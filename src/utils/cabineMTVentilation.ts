@@ -72,10 +72,10 @@ export function calculateVentilation(
   const airflowM3h   = totalHeatKW * AIRFLOW_FACTOR;
 
   const loadBreakdown = [
-    { label: 'P_env',     valueKW: pEnvKW     },
-    { label: 'P_pessoas', valueKW: pPessoasKW },
-    { label: 'P_trafo',   valueKW: pTrafoKW   },
-    { label: 'P_quadros', valueKW: pQuadrosKW },
+    { label: 'pEnvLabel',     valueKW: pEnvKW     },
+    { label: 'pPessoasLabel', valueKW: pPessoasKW },
+    { label: 'pTrafoLabel',   valueKW: pTrafoKW   },
+    { label: 'pQuadrosLabel', valueKW: pQuadrosKW },
   ];
 
   return {

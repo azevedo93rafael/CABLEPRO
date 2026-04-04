@@ -28,23 +28,25 @@ function ResultCard({ title, rawValue, normValue, unit, labelRaw, labelNorm, ind
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.07, duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-      className="bg-[#F5F5F5] dark:bg-white/5 border border-black/5 dark:border-white/10 p-4 group transition-all"
-      style={{ '--hover-border-color': moduleTheme.accent } as React.CSSProperties}
+      className="relative bg-gradient-to-br from-blue-500/[0.03] to-cyan-500/[0.03] dark:from-blue-500/[0.08] dark:to-cyan-500/[0.08] border border-blue-500/10 dark:border-blue-500/20 p-5 rounded-2xl group transition-all hover:shadow-xl hover:shadow-blue-500/5"
     >
-      <p className="text-[9px] font-black tracking-widest uppercase opacity-50 mb-3">{title}</p>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: moduleTheme.accent }} />
+      </div>
+      <p className="text-[10px] font-black tracking-widest uppercase text-blue-600/50 dark:text-blue-400/40 mb-4">{title}</p>
+      <div className="grid grid-cols-2 gap-6">
         <div>
-          <p className="text-[8px] font-bold opacity-30 tracking-widest uppercase mb-1">{labelRaw}</p>
-          <p className="text-base font-black text-[#5a5a5a] dark:text-white/60 font-mono">
-            {rawValue.toFixed(4)}
-            <span className="text-[10px] font-bold ml-1 opacity-50">{unit}</span>
+          <p className="text-[8px] font-bold opacity-30 tracking-widest uppercase mb-1.5 dark:text-white/30">{labelRaw}</p>
+          <p className="text-lg font-black text-[#6a6a6a] dark:text-white/50 font-mono flex items-baseline gap-1">
+            {rawValue.toFixed(3)}
+            <span className="text-[10px] font-bold opacity-40">{unit}</span>
           </p>
         </div>
-        <div>
-          <p className="text-[8px] font-bold opacity-30 tracking-widest uppercase mb-1">{labelNorm}</p>
-          <p className="text-2xl font-black text-[#141414] dark:text-white font-mono tracking-tighter">
+        <div className="relative">
+          <p className="text-[8px] font-bold opacity-30 tracking-widest uppercase mb-1.5 dark:text-white/30">{labelNorm}</p>
+          <p className="text-3xl font-black text-[#141414] dark:text-white font-mono tracking-tighter flex items-baseline gap-1.5">
             {normValue}
-            <span className="text-[10px] font-bold ml-1" style={{ color: moduleTheme.accent }}>{unit}</span>
+            <span className="text-[11px] font-bold" style={{ color: moduleTheme.accent }}>{unit}</span>
           </p>
         </div>
       </div>
@@ -88,37 +90,63 @@ export function ResultsPanel({ t, results, isCalculating }: ResultsPanelProps) {
         key={JSON.stringify(results)}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="space-y-5"
+        className="flex-1 min-h-0 overflow-y-auto custom-scrollbar px-1 -mx-1"
       >
-        {/* Icc Hero Card */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-          className="bg-[#141414] dark:bg-white/10 text-white p-5 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br to-transparent" style={{ '--tw-gradient-from': `${moduleTheme.accent}4D` } as React.CSSProperties} />
-          <div className="relative">
-            <div className="flex items-start justify-between mb-4">
-              <p className="text-[9px] font-black tracking-widest uppercase opacity-60">
-                {t.shortCircuitCurrent}
-              </p>
-              <CheckCircle2 size={14} className="opacity-70 flex-shrink-0 mt-0.5" style={{ color: moduleTheme.accent }} />
+        <div className="space-y-6 pb-32">
+          {/* Icc Result - Fully Integrated Design */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="group relative"
+          >
+            {/* Background Layer (Glassy in dark, invisible in light) */}
+            <div className="absolute inset-0 bg-slate-500/5 dark:bg-white/5 rounded-3xl -m-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+            
+            <div className="relative p-6 border-b-2 border-slate-100 dark:border-white/5">
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-1.5 h-6 rounded-full" 
+                    style={{ background: `linear-gradient(to bottom, ${moduleTheme.primary}, ${moduleTheme.accent})` }} 
+                  />
+                  <div>
+                    <p className="text-[10px] font-black tracking-widest uppercase mb-0.5 opacity-40 dark:text-white">
+                      {t.results}
+                    </p>
+                    <h3 className="text-sm font-bold text-slate-800 dark:text-white/90 uppercase tracking-tight">
+                      {t.shortCircuitCurrent}
+                    </h3>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
+                   <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: moduleTheme.accent }} />
+                   <span className="text-[9px] font-black uppercase tracking-widest opacity-40 dark:text-white/40">Real-time</span>
+                </div>
+              </div>
+
+              <div className="flex items-baseline gap-4">
+                <p className="text-6xl font-black font-mono tracking-tighter text-slate-900 dark:text-white tabular-nums">
+                  {results.shortCircuitCurrentA.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                </p>
+                <span className="text-2xl font-bold text-slate-300 dark:text-white/20 select-none">{t.unitA}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8 mt-10">
+                <div className="relative group/sub">
+                  <p className="text-[10px] text-slate-400 dark:text-white/30 font-bold uppercase tracking-widest mb-1.5">{t.totalPower}</p>
+                  <p className="text-sm font-mono font-bold text-slate-700 dark:text-white/80">
+                    {results.totalPowerKVA.toLocaleString()} <span className="text-[11px] opacity-40">{t.unitKVA}</span>
+                  </p>
+                </div>
+                <div className="relative group/sub">
+                  <p className="text-[10px] text-slate-400 dark:text-white/30 font-bold uppercase tracking-widest mb-1.5">{t.kFactor}</p>
+                  <p className="text-sm font-mono font-bold text-slate-700 dark:text-white/80">
+                    {results.kFactor}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p className="text-4xl font-black font-mono tracking-tighter">
-              {results.shortCircuitCurrentA.toLocaleString('en-US', { maximumFractionDigits: 0 })}
-              <span className="text-sm ml-2 opacity-60">{t.unitA}</span>
-            </p>
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-              <p className="text-[9px] opacity-40 font-bold">
-                {t.totalPower}: {results.totalPowerKVA.toLocaleString()} {t.unitKVA}
-              </p>
-              <p className="text-[9px] opacity-40 font-bold">
-                {t.kFactor}: {results.kFactor}
-              </p>
-            </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
         {/* Result Cards */}
         <div className="space-y-3">
@@ -151,22 +179,26 @@ export function ResultsPanel({ t, results, isCalculating }: ResultsPanelProps) {
           />
         </div>
 
-        {/* Normative Reference Badge */}
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="flex items-center gap-2 px-3 py-2 border"
-          style={{ backgroundColor: `${moduleTheme.accent}14`, borderColor: `${moduleTheme.accent}26` }}
+          className="flex items-center gap-4 px-5 py-4 rounded-2xl border bg-slate-50 dark:bg-white/[0.03] transition-all hover:bg-white hover:dark:bg-white/[0.05]"
+          style={{ borderColor: `${moduleTheme.accent}26` }}
         >
-          <BookOpen size={12} className="flex-shrink-0" style={{ color: moduleTheme.accent }} />
+          <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm border border-indigo-500/10 dark:border-indigo-500/20 bg-gradient-to-br from-indigo-500/10 to-purple-500/10"
+          >
+            <BookOpen size={18} className="text-indigo-600 dark:text-indigo-400" />
+          </div>
           <div>
-            <p className="text-[8px] font-bold opacity-40 uppercase tracking-widest">
+            <p className="text-[9px] font-black opacity-40 uppercase tracking-widest mb-0.5 dark:text-white/40">
               {t.normativeReference}
             </p>
-            <p className="text-[9px] font-bold" style={{ color: moduleTheme.accent }}>{results.normativeReference}</p>
+            <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-tight">{results.normativeReference}</p>
           </div>
         </motion.div>
+        </div>
       </motion.div>
     </AnimatePresence>
   );

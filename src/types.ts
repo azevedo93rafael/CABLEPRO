@@ -608,6 +608,42 @@ export interface Translation {
     transformerSection: string;
     protectionSection: string;
     conductorSection: string;
+    /** New ventilation keys */
+    thermalElementsTitle: string;
+    addBtn: string;
+    noneAddedMsg: string;
+    losses: string;
+    switchboardTag: string;
+    columns: string;
+    dissipationPerUnit: string;
+    totalThermalLoad: string;
+    usefulVolume: string;
+    loadBreakdownTitle: string;
+    pEnvLabel: string;
+    pPessoasLabel: string;
+    pTrafoLabel: string;
+    pQuadrosLabel: string;
+    transformerType: string;
+    switchboardType: string;
+    numColumnsLabel: string;
+    lossesEstimateMsg: string;
+    parametricCalcMsg: string;
+    /** Local TI keys */
+    localTITab: string;
+    racksQuantity: string;
+    roomDimensions: string;
+    widthLabel: string;
+    lengthLabel: string;
+    heightLabel: string;
+    volumeLabel: string;
+    estimatedArea: string;
+    upsCapacity: string;
+    itCooling: string;
+    itPowerConsumption: string;
+    rackConsumptionLabel: string;
+    coolingRequiredkW: string;
+    coolingRequiredBTU: string;
+    ashraeAlert: string;
   };
 }
 
