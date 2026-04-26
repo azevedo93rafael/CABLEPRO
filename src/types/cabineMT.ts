@@ -22,7 +22,6 @@ export interface CabineMTProject {
   cabineDimensions: CabineDimensions;
   elements: VentilationElement[];
   calcVersion: string;
-  localTI?: LocalTIInputs;
   lastSaved?: string;
   notes?: string;
 }
@@ -45,8 +44,6 @@ export interface CabineMTInputs {
   faultTimeS: number;
   /** Material do condutor de terra (default: copper) */
   conductorMaterial: ConductorMaterial;
-  /** Sizing of IT room */
-  localTI?: LocalTIInputs;
 }
 
 /**
@@ -98,28 +95,5 @@ export interface CabineMTValidationState {
   secondaryVoltageV: string;
   shortCircuitVoltagePct: string;
   faultTimeS: string;
-  localTIRacks?: string;
 }
 
-/** LocalTI submodule interfaces */
-export interface LocalTIInputs {
-  quantidade_racks: number;
-  largura_m?: number;
-  comprimento_m?: number;
-  altura_m?: number;
-}
-
-export interface LocalTIResults {
-  area_estimada_m2: number;
-  volume_m3: number;
-  consumo_racks_kW: number;
-  capacidade_ups_recomendada_kVA: number;
-  carga_termica_equipamentos_Q1_kW: number;
-  carga_termica_ambiental_Q2_kW: number;
-  ar_condicionado: {
-    potencia_necessaria_kW: number;
-    potencia_necessaria_BTU: number;
-    redundancia_aplicada: string;
-  };
-  alertas_normativos: string;
-}

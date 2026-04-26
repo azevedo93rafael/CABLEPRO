@@ -628,22 +628,6 @@ export interface Translation {
     numColumnsLabel: string;
     lossesEstimateMsg: string;
     parametricCalcMsg: string;
-    /** Local TI keys */
-    localTITab: string;
-    racksQuantity: string;
-    roomDimensions: string;
-    widthLabel: string;
-    lengthLabel: string;
-    heightLabel: string;
-    volumeLabel: string;
-    estimatedArea: string;
-    upsCapacity: string;
-    itCooling: string;
-    itPowerConsumption: string;
-    rackConsumptionLabel: string;
-    coolingRequiredkW: string;
-    coolingRequiredBTU: string;
-    ashraeAlert: string;
   };
 }
 

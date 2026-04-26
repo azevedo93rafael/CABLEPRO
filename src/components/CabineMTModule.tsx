@@ -14,7 +14,6 @@ import { calculateCabineMT } from '../utils/cabineMTCalculations';
 import { InputPanel } from './cabine-mt/InputPanel';
 import { ResultsPanel } from './cabine-mt/ResultsPanel';
 import { VentilationTab } from './cabine-mt/VentilationTab';
-import LocalTITab from './cabine-mt/LocalTITab';
 import { SavedProjectsDrawer } from './cabine-mt/SavedProjectsDrawer';
 import { CabineMTReport } from './cabine-mt/CabineMTReport';
 import { Logo } from './Logo';
@@ -27,7 +26,7 @@ interface CabineMTModuleProps {
   showToast: (msg: string, type: 'success' | 'error') => void;
 }
 
-type ActiveTab = 'grounding' | 'ventilation' | 'local-ti';
+type ActiveTab = 'grounding' | 'ventilation';
 
 // ── Sidebar NavItem (identical pattern to MainLayout) ─────────────────────────
 function NavItem({
@@ -147,13 +146,6 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                 onClick={() => setActiveTab('ventilation')}
                 accentColor={moduleTheme.accent}
               />
-              <NavItem
-                icon={<Server size={16} />}
-                label={tMT.localTITab}
-                active={activeTab === 'local-ti'}
-                onClick={() => setActiveTab('local-ti')}
-                accentColor={moduleTheme.accent}
-              />
             </div>
           </div>
         </nav>
@@ -215,7 +207,7 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
             </div>
             <div>
               <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
-                {activeTab === 'grounding' ? tMT.groundingTab : activeTab === 'ventilation' ? tMT.ventilationTab : tMT.localTITab}
+                {activeTab === 'grounding' ? tMT.groundingTab : tMT.ventilationTab}
               </p>
               <h2 className="text-[11px] font-bold uppercase tracking-tight dark:text-white">
                 {tMT.moduleName}
@@ -453,18 +445,7 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                     onUpdateDimensions={updateCabineDimensions}
                   />
                 </motion.div>
-              ) : (
-                <motion.div
-                  key="local-ti"
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-                  className="flex flex-col h-full overflow-y-auto"
-                >
-                  <LocalTITab />
-                </motion.div>
-              )}
+              ) : null}
             </AnimatePresence>
           </div>
         </div>
