@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import {
   Zap, ChevronLeft, FileDown, Save, Plus, X,
   Sun, Moon, Globe, Folder, LogOut,
-  Layers, Wind, Keyboard, Server,
+  Layers, Wind, Keyboard, Server, Users,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -14,6 +14,7 @@ import { calculateCabineMT } from '../utils/cabineMTCalculations';
 import { InputPanel } from './cabine-mt/InputPanel';
 import { ResultsPanel } from './cabine-mt/ResultsPanel';
 import { VentilationTab } from './cabine-mt/VentilationTab';
+import { UserManagement } from './UserManagement';
 import { SavedProjectsDrawer } from './cabine-mt/SavedProjectsDrawer';
 import { CabineMTReport } from './cabine-mt/CabineMTReport';
 import { Logo } from './Logo';
@@ -26,7 +27,7 @@ interface CabineMTModuleProps {
   showToast: (msg: string, type: 'success' | 'error') => void;
 }
 
-type ActiveTab = 'grounding' | 'ventilation';
+type ActiveTab = 'grounding' | 'ventilation' | 'users';
 
 // ── Sidebar NavItem (identical pattern to MainLayout) ─────────────────────────
 function NavItem({
@@ -44,7 +45,7 @@ function NavItem({
       onClick={onClick}
     >
       <div
-        className="p-2 rounded transition-colors"
+        className="p-2 rounded-lg transition-colors"
         style={active ? { backgroundColor: 'white', color: accentColor } : { backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.6)' }}
       >
         {icon}
@@ -146,6 +147,15 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                 onClick={() => setActiveTab('ventilation')}
                 accentColor={moduleTheme.accent}
               />
+              {user.role === 'admin' && (
+                <NavItem
+                  icon={<Users size={18} />}
+                  label={TRANSLATIONS[lang].userManagement.title}
+                  active={activeTab === 'users'}
+                  onClick={() => setActiveTab('users')}
+                  accentColor={moduleTheme.accent}
+                />
+              )}
             </div>
           </div>
         </nav>
@@ -207,10 +217,11 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
             </div>
             <div>
               <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
-                {activeTab === 'grounding' ? tMT.groundingTab : tMT.ventilationTab}
+                {tMT.moduleName}
               </p>
               <h2 className="text-[11px] font-bold uppercase tracking-tight dark:text-white">
-                {tMT.moduleName}
+                {activeTab === 'users' ? TRANSLATIONS[lang].userManagement.title : 
+                 activeTab === 'grounding' ? tMT.groundingTab : tMT.ventilationTab}
               </h2>
             </div>
           </div>
@@ -444,6 +455,16 @@ function CabineMTModuleInner({ user, onBack, showToast }: CabineMTModuleProps) {
                     onUpdateElements={updateElements}
                     onUpdateDimensions={updateCabineDimensions}
                   />
+                </motion.div>
+              ) : activeTab === 'users' ? (
+                <motion.div
+                  key="users"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  className="bg-white dark:bg-[#141414] border border-black/5 dark:border-white/5 rounded-3xl p-8 h-full overflow-y-auto"
+                >
+                  <UserManagement t={TRANSLATIONS[lang]} showToast={showToast} />
                 </motion.div>
               ) : null}
             </AnimatePresence>

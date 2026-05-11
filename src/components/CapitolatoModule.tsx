@@ -591,7 +591,7 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
             <FileText size={20} />
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-wider uppercase">CAPITOLATO PRO</h1>
+            <h1 className="text-sm font-bold tracking-wider uppercase">Capitolato Generator</h1>
             <p className="text-[10px] opacity-50">SISTEMA DI INGEGNERIA</p>
           </div>
         </div>
@@ -700,18 +700,28 @@ export function CapitolatoModule({ user, onBack, showToast }: Omit<CapitolatoMod
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
         {/* Header */}
-        <header className="h-20 bg-white dark:bg-[#141414] border-b border-black/5 dark:border-white/5 flex items-center justify-between px-8 z-10">
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] font-bold opacity-30 uppercase tracking-widest">{t.header.currentModule}</span>
-            <h2 className="text-xl font-bold uppercase tracking-tight">
-              {activeView === 'dashboard' ? t.capitolato.dashboard : 
-               activeView === 'editor' ? t.capitolato.newCapitolato : 
-               activeView === 'users' ? t.userManagement.title :
-               activeView === 'projects' ? t.capitolato.existingProjects :
-               activeView === 'elements' ? t.capitolato.technicalElementsLibrary :
-               activeView === 'elementForm' ? (editingElement ? t.capitolato.editElement : t.capitolato.newElement) :
-               t.capitolato.preview}
-            </h2>
+        <header className="h-16 bg-white dark:bg-[#141414] border-b border-black/5 dark:border-white/5 flex items-center justify-between px-8 z-30 shrink-0">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-7 h-7 rounded flex items-center justify-center shadow-sm"
+              style={{ backgroundColor: moduleTheme.accent }}
+            >
+              <FileText size={14} className="text-white" />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
+                {t.capitolato.moduleTitle}
+              </p>
+              <h2 className="text-[11px] font-bold uppercase tracking-tight dark:text-white">
+                {activeView === 'dashboard' ? t.capitolato.dashboard : 
+                 activeView === 'editor' ? t.capitolato.newCapitolato : 
+                 activeView === 'users' ? t.userManagement.title :
+                 activeView === 'projects' ? t.capitolato.existingProjects :
+                 activeView === 'elements' ? t.capitolato.technicalElementsLibrary :
+                 activeView === 'elementForm' ? (editingElement ? t.capitolato.editElement : t.capitolato.newElement) :
+                 t.capitolato.preview}
+              </h2>
+            </div>
           </div>
 
           <div className="flex items-center gap-6">

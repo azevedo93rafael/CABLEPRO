@@ -84,7 +84,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         <div className="p-6 flex items-center gap-3 border-b border-white/10">
           <Logo className="w-10 h-10 text-white dark:text-[#6A1B1B]" />
           <div>
-            <h1 className="text-sm font-bold tracking-wider">CABLEFILL PRO</h1>
+            <h1 className="text-sm font-bold tracking-wider uppercase">CableFill Calculator</h1>
             <p className="text-[10px] opacity-50">SISTEMA DI INGEGNERIA</p>
           </div>
         </div>
@@ -202,18 +202,28 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
         {/* Top Bar */}
-        <header className="h-16 bg-white dark:bg-[#141414] border-b border-black/5 dark:border-white/5 flex items-center justify-between px-8 transition-colors shrink-0">
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] font-bold opacity-40 uppercase tracking-widest">{t.header.currentModule}</span>
-            <h2 className="text-sm font-bold uppercase tracking-tight">
-              {activeTab === 'dashboard' ? t.sidebar.overview : 
-               activeTab === 'trays' ? t.sidebar.cableTrays : 
-               activeTab === 'conduits' ? t.sidebar.conduits : 
-               activeTab === 'cables' ? t.sidebar.cables : 
-               activeTab === 'database' ? t.sidebar.database : 
-               activeTab === 'users' ? t.userManagement.title : 
-               t.sidebar.overview}
-            </h2>
+        <header className="h-16 bg-white dark:bg-[#141414] border-b border-black/5 dark:border-white/5 flex items-center justify-between px-8 transition-colors shrink-0 z-30">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-7 h-7 rounded flex items-center justify-center shadow-sm"
+              style={{ backgroundColor: moduleTheme.accent }}
+            >
+              <Layers size={14} className="text-white" />
+            </div>
+            <div>
+              <p className="text-[9px] font-bold opacity-40 uppercase tracking-widest">
+                {t.title}
+              </p>
+              <h2 className="text-[11px] font-bold uppercase tracking-tight dark:text-white">
+                {activeTab === 'dashboard' ? t.sidebar.overview : 
+                 activeTab === 'trays' ? t.sidebar.cableTrays : 
+                 activeTab === 'conduits' ? t.sidebar.conduits : 
+                 activeTab === 'cables' ? t.sidebar.cables : 
+                 activeTab === 'database' ? t.sidebar.database : 
+                 activeTab === 'users' ? t.userManagement.title : 
+                 t.sidebar.overview}
+              </h2>
+            </div>
           </div>
 
           <div className="flex items-center gap-6">

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ChevronLeft } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { useApp } from './context/AppContext';
 import { useProject } from './context/ProjectContext';
@@ -11,6 +12,10 @@ import { DatabaseView } from './components/views/DatabaseView';
 import { UserManagement } from './components/UserManagement';
 import { CapitolatoModule } from './components/CapitolatoModule';
 import { CabineMTModule } from './components/CabineMTModule';
+import { ChecklistPage } from './modules/projectManagement/pages/ChecklistPage';
+import ProjectDashboard from './modules/projectManagement/pages/ProjectDashboard';
+import { ProjectDetailsView } from './modules/projectManagement/pages/ProjectDetailsView';
+import { useProjectStore } from './modules/projectManagement/store/projectStore';
 import { TRANSLATIONS } from './constants';
 
 import { supabase } from './lib/supabase';
@@ -27,6 +32,10 @@ export default function App() {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
 
+  // Project Management sub-navigation
+  const [pmView, setPmView] = useState<'dashboard' | 'details' | 'checklist' | 'users'>('dashboard');
+  const { setActiveProject } = useProjectStore();
+
   if (!isSessionVerified) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -39,13 +48,13 @@ export default function App() {
   if (!user) {
     return <Login t={TRANSLATIONS[lang]} onLogin={(u) => {
       setUser(u);
-      localStorage.setItem('cablefill_user', JSON.stringify(u));
+      localStorage.setItem('cablepro_user', JSON.stringify(u));
     }} />;
   }
 
   // Module Selector logic
   if (!activeModule) {
-    const ALL_MODULES = ['cablefill', 'capitolato', 'cabine-mt'];
+    const ALL_MODULES = ['cablefill', 'capitolato', 'cabine-mt', 'project-management'];
     const allowedModules = user.role === 'admin' ? ALL_MODULES : (user.accessible_modules || []);
     return <ModuleSelector onSelect={setActiveModule} t={TRANSLATIONS[lang]} lang={lang} setLang={setLang} allowedModules={allowedModules} />;
   }
@@ -70,6 +79,21 @@ export default function App() {
         user={user as any}
         onBack={() => setActiveModule(null)}
         showToast={showToast}
+      />
+    );
+  }
+
+  // Project Management module
+  if (activeModule === 'project-management') {
+    return (
+      <ProjectDashboard 
+        view={pmView}
+        onSetView={(v) => setPmView(v)}
+        onViewDetails={(id) => {
+          setActiveProject(id);
+          setPmView('details');
+        }}
+        onBack={() => setActiveModule(null)}
       />
     );
   }

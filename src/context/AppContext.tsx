@@ -9,8 +9,10 @@ interface AppContextType {
   setDarkMode: (mode: boolean) => void;
   activeTab: 'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users';
   setActiveTab: (tab: 'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users') => void;
-  activeModule: 'cablefill' | 'capitolato' | 'cabine-mt' | null;
-  setActiveModule: (module: 'cablefill' | 'capitolato' | 'cabine-mt' | null) => void;
+  activeModule: 'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | null;
+  setActiveModule: (module: 'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | null) => void;
+  activeTheme: string | null;
+  setActiveTheme: (theme: string | null) => void;
   moduleTheme: ModuleTheme;
   toastData: { message: string; type: 'success' | 'error' } | null;
   showToast: (message: string, type?: 'success' | 'error') => void;
@@ -26,12 +28,13 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLang] = useState<Language>('it');
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users'>('dashboard');
-  const [activeModule, setActiveModule] = useState<'cablefill' | 'capitolato' | 'cabine-mt' | null>(null);
+  const [activeModule, setActiveModule] = useState<'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | null>(null);
+  const [activeTheme, setActiveTheme] = useState<string | null>(null);
   const [toastData, setToastData] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);
   const [isExporting, setIsExporting] = useState(false);
 
-  const moduleTheme = useMemo(() => getModuleTheme(activeModule), [activeModule]);
+  const moduleTheme = useMemo(() => getModuleTheme(activeTheme || activeModule), [activeTheme, activeModule]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToastData({ message, type });
@@ -52,6 +55,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       darkMode, setDarkMode,
       activeTab, setActiveTab,
       activeModule, setActiveModule,
+      activeTheme, setActiveTheme,
       moduleTheme,
       toastData, showToast,
       previewZoom, setPreviewZoom,

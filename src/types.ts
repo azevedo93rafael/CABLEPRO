@@ -49,6 +49,13 @@ export interface Project {
   notes?: string;
 }
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  checked: boolean;
+  details?: string[];
+}
+
 export interface MaterialItem {
   id: string;
   name: string;
@@ -311,6 +318,12 @@ export interface Translation {
     adjustFilters: string;
     dbColumns: string;
     masterAdminDeleteError: string;
+    adminRole: string;
+    userRole: string;
+    cableFillPro: string;
+    capitolatoPro: string;
+    cabineMT: string;
+    management: string;
   };
   report: {
     title: string;
@@ -345,9 +358,69 @@ export interface Translation {
     chooseModule: string;
     cableFillDesc: string;
     capitolatoDesc: string;
+    projectManagementDesc: string;
     enter: string;
   };
+  projectHub: {
+    title: string;
+    dashboard: string;
+    allProjects: string;
+    inProgress: string;
+    completed: string;
+    userManagement: string;
+    projectsInProgress: string;
+    projectCount: string;
+    searchPlaceholder: string;
+    newProject: string;
+    loadingProjects: string;
+    errorLoading: string;
+    noProjectsFound: string;
+    searchFiltersHint: string;
+    createProjectTitle: string;
+    projectNameLabel: string;
+    projectNamePlaceholder: string;
+    clientLabel: string;
+    clientPlaceholder: string;
+    descriptionLabel: string;
+    descriptionPlaceholder: string;
+    cancel: string;
+    create: string;
+    noDescription: string;
+    viewDetails: string;
+    progressLabel: string;
+    deleteConfirm: string;
+    deleteProject: string;
+    back: string;
+    projectDetails: string;
+    startDateLabel: string;
+    phasesLabel: string;
+    qualityLabel: string;
+    validated: string;
+    projectExecution: string;
+    generalStatus: string;
+    active: string;
+    checklistHint: string;
+    goToChecklist: string;
+    phasesSummary: string;
+    otherPhases: string;
+    backToDetails: string;
+    technicalChecklist: string;
+    activeProjects: string;
+    confirmPhase: string;
+    reopenPhase: string;
+    activePhase: string;
+    locked: string;
+    details: string;
+    checklist: string;
+    noDescriptionProvided: string;
+    phaseCompletedSuccess: string;
+    phaseReopenedSuccess: string;
+    activeProject: string;
+    moduleTitle: string;
+    engineeringSystem: string;
+  };
   capitolato: {
+    moduleTitle: string;
     newCapitolato: string;
     docSettings: string;
     projectTitle: string;

@@ -32,6 +32,12 @@ export const MODULE_THEMES: Record<string, ModuleTheme> = {
     accent:      '#2A7A55',
     accentHover: '#1E5C3E',
   },
+  'project-management': {
+    primary:     '#78350F', // amber-900
+    dark:        '#451A03', // amber-950
+    accent:      '#F59E0B', // amber-500
+    accentHover: '#D97706', // amber-600
+  },
 };
 
 export const DEFAULT_THEME: ModuleTheme = MODULE_THEMES['cablefill'];

@@ -35,7 +35,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
     email: '',
     password: '',
     role: 'user',
-    accessible_modules: ['cablefill', 'capitolato', 'cabine-mt']
+    accessible_modules: ['cablefill', 'capitolato', 'cabine-mt', 'project-management']
   });
   const [creatingUser, setCreatingUser] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -107,7 +107,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
         email: '',
         password: '',
         role: 'user',
-        accessible_modules: ['cablefill', 'capitolato', 'cabine-mt']
+        accessible_modules: ['cablefill', 'capitolato', 'cabine-mt', 'project-management']
       });
       await fetchUsers();
       showToast(t.userManagement.userCreated, 'success');
@@ -161,7 +161,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
     setEditForm({
       name: user.name || user.full_name || user.nome || user.display_name || user.username || '',
       role: user.role,
-      accessible_modules: user.accessible_modules || ['cablefill', 'capitolato', 'cabine-mt']
+      accessible_modules: user.accessible_modules || ['cablefill', 'capitolato', 'cabine-mt', 'project-management']
     });
   };
 
@@ -216,6 +216,13 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
     }
   };
 
+  const moduleLabels: Record<string, string> = {
+    'cablefill': t.userManagement.cableFillPro,
+    'capitolato': t.userManagement.capitolatoPro,
+    'cabine-mt': t.userManagement.cabineMT,
+    'project-management': t.userManagement.management
+  };
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -229,7 +236,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-black italic tracking-tighter uppercase dark:text-white">
+            <h2 className="text-2xl font-bold tracking-tighter uppercase dark:text-white">
               {t.userManagement.title}
             </h2>
             <p className="text-[10px] font-bold opacity-40 tracking-widest uppercase">{t.userManagement.users}</p>
@@ -268,8 +275,8 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
               onBlur={(e) => e.currentTarget.style.borderColor = ''}
             >
               <option value="all">{t.userManagement.allRoles}</option>
-              <option value="admin">Admin</option>
-              <option value="user">User</option>
+              <option value="admin">{t.userManagement.adminRole}</option>
+              <option value="user">{t.userManagement.userRole}</option>
             </select>
           </div>
         </div>
@@ -330,8 +337,8 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                     onFocus={(e) => e.currentTarget.style.borderColor = moduleTheme.accent}
                     onBlur={(e) => e.currentTarget.style.borderColor = ''}
                   >
-                    <option value="user" className="dark:bg-[#141414]">USER</option>
-                    <option value="admin" className="dark:bg-[#141414]">ADMIN</option>
+                    <option value="user" className="dark:bg-[#141414]">{t.userManagement.userRole.toUpperCase()}</option>
+                    <option value="admin" className="dark:bg-[#141414]">{t.userManagement.adminRole.toUpperCase()}</option>
                   </select>
                 </div>
               </div>
@@ -345,7 +352,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                     className="flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all"
                     style={newUserForm.accessible_modules.includes('cablefill') ? { backgroundColor: moduleTheme.accent, borderColor: moduleTheme.accent, color: 'white' } : { borderColor: '' }}
                   >
-                    CableFill Pro
+                    {t.userManagement.cableFillPro}
                   </button>
                   <button
                     type="button"
@@ -353,7 +360,7 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                     className="flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all"
                     style={newUserForm.accessible_modules.includes('capitolato') ? { backgroundColor: moduleTheme.accent, borderColor: moduleTheme.accent, color: 'white' } : { borderColor: '' }}
                   >
-                    Capitolato Pro
+                    {t.userManagement.capitolatoPro}
                   </button>
                   <button
                     type="button"
@@ -361,7 +368,15 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                     className="flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all"
                     style={newUserForm.accessible_modules.includes('cabine-mt') ? { backgroundColor: moduleTheme.accent, borderColor: moduleTheme.accent, color: 'white' } : { borderColor: '' }}
                   >
-                    Cabine MT
+                    {t.userManagement.cabineMT}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleModule('project-management', true)}
+                    className="flex items-center gap-2 px-4 py-2 border text-[10px] font-bold uppercase tracking-widest transition-all"
+                    style={newUserForm.accessible_modules.includes('project-management') ? { backgroundColor: moduleTheme.accent, borderColor: moduleTheme.accent, color: 'white' } : { borderColor: '' }}
+                  >
+                    {t.userManagement.management}
                   </button>
                 </div>
               </div>
@@ -458,8 +473,8 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                             onFocus={(e) => e.currentTarget.style.borderColor = moduleTheme.accent}
                             onBlur={(e) => e.currentTarget.style.borderColor = ''}
                           >
-                            <option value="user" className="dark:bg-[#141414]">USER</option>
-                            <option value="admin" className="dark:bg-[#141414]">ADMIN</option>
+                            <option value="user" className="dark:bg-[#141414]">{t.userManagement.userRole.toUpperCase()}</option>
+                            <option value="admin" className="dark:bg-[#141414]">{t.userManagement.adminRole.toUpperCase()}</option>
                           </select>
                         ) : (
                           u.role
@@ -492,12 +507,20 @@ export function UserManagement({ t, showToast }: UserManagementProps) {
                             >
                               CMT
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleModule('project-management')}
+                              className="px-2 py-1 text-[8px] font-bold uppercase border transition-all"
+                              style={editForm.accessible_modules.includes('project-management') ? { backgroundColor: moduleTheme.accent, color: 'white', borderColor: moduleTheme.accent } : { borderColor: '' }}
+                            >
+                              PM
+                            </button>
                           </div>
                         ) : (
                           <div className="flex gap-1">
-                            {(u.accessible_modules || ['cablefill', 'capitolato', 'cabine-mt']).map((m: string) => (
+                            {(u.accessible_modules || ['cablefill', 'capitolato', 'cabine-mt', 'project-management']).map((m: string) => (
                               <span key={m} className="text-[8px] font-bold px-1.5 py-0.5 bg-black/5 dark:bg-white/5 rounded uppercase opacity-60">
-                                {m === 'cablefill' ? 'CF' : m === 'capitolato' ? 'CP' : 'CMT'}
+                                {moduleLabels[m] || m.toUpperCase()}
                               </span>
                             ))}
                           </div>
