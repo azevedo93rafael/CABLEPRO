@@ -20,6 +20,7 @@ export interface Structure {
   height: number; // mm
   fillLimit: number; // percentage (e.g., 40, 50)
   hasSeparator?: boolean;
+  spareTubes?: number;
 }
 
 export interface StandardStructure {
@@ -182,6 +183,7 @@ export interface Translation {
     tagPlaceholder: string;
     editTag: string;
     hasSeparator: string;
+    spareTubes: string;
     mixedSystemsWarning: string;
     conduitMixedWarning: string;
     separatorRequiredWarning: string;

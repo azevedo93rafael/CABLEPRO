@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Layers, FileText, Zap, ArrowRight, CheckCircle2, Globe, ClipboardCheck } from 'lucide-react';
+import { Layers, FileText, Zap, ArrowRight, CheckCircle2, Globe, ClipboardCheck, Sun, Moon } from 'lucide-react';
 import { Translation, Language } from '../types';
 import { MODULE_THEMES } from '../config/moduleThemes';
+import { useApp } from '../context/AppContext';
 
 interface ModuleSelectorProps {
   onSelect: (module: 'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management') => void;
@@ -79,6 +80,7 @@ export function ModuleSelector({
   setLang,
   allowedModules = ['cablefill', 'capitolato', 'cabine-mt', 'project-management'],
 }: ModuleSelectorProps) {
+  const { darkMode, setDarkMode } = useApp();
   const visible = MODULE_CONFIG.filter((m) => allowedModules.includes(m.id));
 
   const getDesc = (mod: typeof MODULE_CONFIG[0]) => {
@@ -101,27 +103,37 @@ export function ModuleSelector({
   ];
 
   return (
-    <div className="min-h-screen bg-midnight text-midnight-text flex flex-col items-center justify-center p-8 transition-colors overflow-hidden relative">
+    <div className={`min-h-screen ${darkMode ? 'bg-midnight text-midnight-text' : 'bg-[#f4f4f4] text-black'} flex flex-col items-center justify-center p-8 transition-colors overflow-hidden relative`}>
 
       {/* ── Ambient Background Elements ── */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/10 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* ── Language Switcher ───────────────────────────────────────────────── */}
-      <div className="absolute top-6 right-6 z-50 flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-full p-1">
-        <Globe size={14} className="text-white/40 ml-2" />
+      {/* ── Top Controls ───────────────────────────────────────────────── */}
+      <div className={`absolute top-6 right-6 z-50 flex items-center gap-4 ${darkMode ? 'bg-white/5 border-white/10' : 'bg-black/5 border-black/10'} backdrop-blur-md border rounded-full p-1 pl-2`}>
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className={`p-1.5 rounded-full transition-colors ${darkMode ? 'text-white/40 hover:text-white hover:bg-white/10' : 'text-black/40 hover:text-black hover:bg-black/10'}`}
+          title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {darkMode ? <Sun size={14} /> : <Moon size={14} />}
+        </button>
+        <div className={`w-px h-4 ${darkMode ? 'bg-white/10' : 'bg-black/10'}`}></div>
+        <div className="flex items-center gap-1">
+          <Globe size={14} className={`${darkMode ? 'text-white/40' : 'text-black/40'} ml-1`} />
         {languages.map((langOption) => (
           <button
             key={langOption.code}
             onClick={() => setLang(langOption.code)}
             className={`px-3 py-1 text-[10px] font-bold rounded-full transition-all ${lang === langOption.code
                 ? 'bg-[#81292C] text-white'
-                : 'text-white/40 hover:text-white hover:bg-white/10'
+                : darkMode ? 'text-white/40 hover:text-white hover:bg-white/10' : 'text-black/40 hover:text-black hover:bg-black/10'
               }`}
           >
             {langOption.label}
           </button>
         ))}
+        </div>
       </div>
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
@@ -131,13 +143,13 @@ export function ModuleSelector({
         transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
         className="text-center mb-16 relative z-10"
       >
-        <p className="text-[10px] font-black tracking-[0.4em] uppercase text-white/40 mb-4 font-outfit">
+        <p className={`text-[10px] font-black tracking-[0.4em] uppercase ${darkMode ? 'text-white/40' : 'text-black/40'} mb-4 font-outfit`}>
           RILO ELETTRICO • ENGINEERING PLATFORM
         </p>
-        <h1 className="text-5xl md:text-6xl font-display font-bold text-white tracking-tight mb-4 drop-shadow-2xl">
+        <h1 className={`text-5xl md:text-6xl font-display font-bold ${darkMode ? 'text-white' : 'text-black'} tracking-tight mb-4 drop-shadow-2xl`}>
           {t.selector.chooseModule}
         </h1>
-        <div className="w-20 h-0.5 mx-auto rounded-full bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        <div className={`w-20 h-0.5 mx-auto rounded-full bg-gradient-to-r from-transparent ${darkMode ? 'via-white/20' : 'via-black/20'} to-transparent`} />
       </motion.div>
 
       {/* ── Cards Container ─────────────────────────────────────────────────── */}
@@ -168,7 +180,7 @@ export function ModuleSelector({
               whileHover={{ y: -12 }}
               className="flex flex-col h-full"
             >
-              <div className="group relative bg-[#1A1A1A]/40 backdrop-blur-xl rounded-[2rem] border border-white/5 overflow-hidden flex flex-col h-full transition-all duration-500 hover:border-white/20 hover:bg-[#1A1A1A]/60 shadow-2xl">
+              <div className={`group relative ${darkMode ? 'bg-[#1A1A1A]/40 border-white/5 hover:border-white/20 hover:bg-[#1A1A1A]/60' : 'bg-white/80 border-black/5 hover:border-black/20 hover:bg-white'} backdrop-blur-xl rounded-[2rem] border overflow-hidden flex flex-col h-full transition-all duration-500 shadow-2xl`}>
 
                 {/* Accent Glow Top Right */}
                 <div
@@ -190,11 +202,11 @@ export function ModuleSelector({
                     </div>
                   </div>
 
-                  <h2 className="text-3xl font-display font-bold text-white mb-4 leading-tight">
+                  <h2 className={`text-3xl font-display font-bold ${darkMode ? 'text-white' : 'text-black'} mb-4 leading-tight`}>
                     {mod.title}
                   </h2>
 
-                  <p className="text-[14px] font-sans text-white/50 leading-relaxed mb-8 group-hover:text-white/70 transition-colors">
+                  <p className={`text-[14px] font-sans ${darkMode ? 'text-white/50 group-hover:text-white/70' : 'text-black/50 group-hover:text-black/70'} leading-relaxed mb-8 transition-colors`}>
                     {getDesc(mod)}
                   </p>
 
@@ -202,12 +214,12 @@ export function ModuleSelector({
                     {features.map((feat) => (
                       <div key={feat} className="flex items-center gap-3">
                         <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 bg-white/5 border border-white/10 group-hover:border-white/20 transition-all"
+                          className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${darkMode ? 'bg-white/5 border-white/10 group-hover:border-white/20' : 'bg-black/5 border-black/10 group-hover:border-black/20'} border transition-all`}
                         >
                           <CheckCircle2 size={12} style={{ color: accent }} />
                         </div>
                         <span
-                          className="text-[11px] font-bold tracking-[0.15em] uppercase text-white/60 group-hover:text-white/90 font-outfit"
+                          className={`text-[11px] font-bold tracking-[0.15em] uppercase ${darkMode ? 'text-white/60 group-hover:text-white/90' : 'text-black/60 group-hover:text-black/90'} font-outfit`}
                         >
                           {feat}
                         </span>
@@ -248,7 +260,7 @@ export function ModuleSelector({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1, duration: 1 }}
-        className="mt-16 text-[10px] font-bold tracking-[0.5em] uppercase text-white/20 relative z-10 font-outfit"
+        className={`mt-16 text-[10px] font-bold tracking-[0.5em] uppercase ${darkMode ? 'text-white/20' : 'text-black/20'} relative z-10 font-outfit`}
       >
         RILO ELETTRICO SYSTEM • 2025 EDITION
       </motion.footer>

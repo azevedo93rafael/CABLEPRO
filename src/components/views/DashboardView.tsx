@@ -43,7 +43,7 @@ export const DashboardView = () => {
   
   const { 
     projects, activeProject, activeProjectId, setActiveProjectId,
-    addNewProject, deleteProject, renameProject, setStructure, setProjectCables
+    addNewProject, deleteProject, duplicateProject, renameProject, setStructure, setProjectCables
   } = useProject();
 
   const [cableQty, setCableQty] = useState(1);
@@ -104,10 +104,7 @@ export const DashboardView = () => {
     const hasSpecial = projectCables.some(pc => pc.cable?.type !== 'power' && pc.cable !== undefined) || newCable.type !== 'power';
 
     if (hasPower && hasSpecial) {
-      if (structure.type === 'conduit') {
-        setWarning(t.input.conduitMixedWarning);
-        return;
-      } else if (structure.type === 'tray' && !structure.hasSeparator) {
+      if (structure.type === 'tray' && !structure.hasSeparator) {
         setWarning(t.input.mixedSystemsWarning);
         return;
       }
@@ -271,6 +268,15 @@ export const DashboardView = () => {
           }
 
           const placedInThis = currentStructure.cables;
+          
+          if (structure.type === 'conduit' && placedInThis.length > 0) {
+            const hasPower = placedInThis.some(c => c.type === 'power');
+            const isUnitPower = unit.type === 'power';
+            if (hasPower !== isUnitPower) {
+              continue;
+            }
+          }
+
           let bestX = 0;
           let bestY = 0;
           let found = false;
@@ -423,6 +429,12 @@ export const DashboardView = () => {
         }
       });
     }
+
+    if (structure.type === 'conduit' && structure.spareTubes && structure.spareTubes > 0) {
+      for (let i = 0; i < structure.spareTubes; i++) {
+        structures.push({ cables: [], currentArea: 0, isSpare: true });
+      }
+    }
     
     return structures.map(s => {
       return {
@@ -519,7 +531,14 @@ export const DashboardView = () => {
                 <div className="w-1 h-3 bg-[#81292C] rounded-full"></div>
                 <div className="w-1 h-5 bg-[#81292C] rounded-full"></div>
               </div>
-              <h3 className="text-xs font-bold tracking-widest dark:text-white uppercase">{t.input.parameters}</h3>
+              <h3 className="text-xs font-bold tracking-widest dark:text-white uppercase flex-1">{t.input.parameters}</h3>
+              <button 
+                onClick={() => duplicateProject(activeProjectId)}
+                title={t.preview.duplicateProject}
+                className="text-[#5a5a5a] hover:text-[#81292C] dark:text-white/50 dark:hover:text-white transition-colors p-1"
+              >
+                <Copy size={16} />
+              </button>
             </div>
 
             <div className="space-y-6">
@@ -625,6 +644,18 @@ export const DashboardView = () => {
                       value={structure.height}
                       readOnly
                       className="w-full bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/5 p-2 text-xs font-mono outline-none opacity-60 cursor-not-allowed dark:text-white"
+                    />
+                  </div>
+                )}
+                {structure?.type === 'conduit' && (
+                  <div>
+                    <label className="block text-[10px] font-bold opacity-40 mb-2 tracking-widest uppercase">{t.input.spareTubes}</label>
+                    <input 
+                      type="number" 
+                      min="0"
+                      value={structure.spareTubes || 0}
+                      onChange={(e) => setStructure(s => ({ ...s, spareTubes: Math.max(0, parseInt(e.target.value) || 0) }))}
+                      className="w-full bg-[#efefef] dark:bg-white/5 border border-black/5 dark:border-white/5 p-2 text-xs font-mono outline-none dark:text-white focus:ring-2 focus:ring-[#81292C]/50"
                     />
                   </div>
                 )}

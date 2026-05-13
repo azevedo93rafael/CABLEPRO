@@ -17,6 +17,7 @@ interface ProjectContextType {
   renameProject: (id: string, newName: string) => void;
   addNewProject: (t: any) => void;
   deleteProject: (id: string) => void;
+  duplicateProject: (id: string) => void;
   setStructure: (update: Structure | ((s: Structure) => Structure)) => void;
   setProjectCables: (update: ProjectCable[] | ((pc: ProjectCable[]) => ProjectCable[])) => void;
 }
@@ -202,6 +203,26 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const duplicateProject = (id: string) => {
+    const projectToCopy = projects.find(p => p.id === id);
+    if (!projectToCopy) return;
+
+    const newId = crypto.randomUUID();
+    const duplicatedProject: Project = {
+      ...projectToCopy,
+      id: newId,
+      name: `${projectToCopy.name} - Cópia`,
+      structure: { ...projectToCopy.structure, id: crypto.randomUUID() },
+      projectCables: projectToCopy.projectCables.map(pc => ({
+        ...pc,
+        id: crypto.randomUUID()
+      }))
+    };
+    
+    setProjects(prev => [...prev, duplicatedProject]);
+    setActiveProjectId(newId);
+  };
+
   const setStructure = (update: Structure | ((s: Structure) => Structure)) => {
     const newStructure = typeof update === 'function' ? update(activeProject?.structure as Structure) : update;
     updateActiveProject({ structure: newStructure });
@@ -220,7 +241,7 @@ export const ProjectProvider = ({ children }: { children: ReactNode }) => {
       updateActiveProject, saveProject,
       loadProject, deleteSavedProject,
       renameProject, addNewProject,
-      deleteProject, setStructure,
+      deleteProject, duplicateProject, setStructure,
       setProjectCables
     }}>
       {children}
