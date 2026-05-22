@@ -1,33 +1,51 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // src/modules/cmeGenerator/services/claudeService.ts
-// All Anthropic API calls: price matching + interactive chat
-// Uses dynamic import to avoid the @anthropic-ai/sdk crashing the browser
-// at module load time (SDK has node: builtins that don't exist in browsers)
+// AI calls for price matching + interactive chat.
+// Uses Google Gemini API (free tier) via native fetch — no extra SDK needed.
+// Key: VITE_GEMINI_API_KEY (same key already used by the rest of the app)
 // ─────────────────────────────────────────────────────────────────────────────
-import type Anthropic from '@anthropic-ai/sdk';
 import type { Elemento, PrezzarioVoce, ResultadoItem, SubItem, StatusItem, ChatMessage } from '../types';
 
-const CLAUDE_MODEL    = 'claude-opus-4-5';
-const MAX_TOKENS      = 4096;
-const CONFIDENCE_OK   = 0.85;
+const GEMINI_MODEL     = 'gemini-2.0-flash';   // free tier, fast
+const GEMINI_BASE_URL  = 'https://generativelanguage.googleapis.com/v1beta/models';
+const CONFIDENCE_OK    = 0.85;
 const CONFIDENCE_ALERT = 0.60;
 
-// API key from env (set in .env as VITE_ANTHROPIC_KEY)
-const API_KEY = import.meta.env.VITE_ANTHROPIC_KEY as string | undefined;
+// API key — re-uses the same key already configured for the rest of the app
+const API_KEY: string | undefined =
+  (import.meta.env.VITE_GEMINI_API_KEY as string | undefined)
+  ?? (import.meta.env.GEMINI_API_KEY as string | undefined);
 
-// ── Lazy loader: imports Anthropic only when first called ─────────────────────
-let _clientPromise: Promise<Anthropic> | null = null;
 
-async function getClient(): Promise<Anthropic> {
-  if (!_clientPromise) {
-    _clientPromise = (async () => {
-      if (!API_KEY) throw new Error('VITE_ANTHROPIC_KEY não configurada no .env');
-      // Dynamic import keeps the node: builtins out of the initial bundle
-      const { default: AnthropicClass } = await import('@anthropic-ai/sdk');
-      return new AnthropicClass({ apiKey: API_KEY, dangerouslyAllowBrowser: true });
-    })();
+// ── Core fetch wrapper ────────────────────────────────────────────────────────
+async function geminiGenerate(systemInstruction: string, userPrompt: string, maxTokens = 4096): Promise<string> {
+  if (!API_KEY) throw new Error('VITE_GEMINI_API_KEY não configurada.');
+
+  const url = `${GEMINI_BASE_URL}/${GEMINI_MODEL}:generateContent?key=${API_KEY}`;
+  const body = {
+    system_instruction: { parts: [{ text: systemInstruction }] },
+    contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+    generationConfig: {
+      maxOutputTokens: maxTokens,
+      temperature: 0.1,
+      responseMimeType: 'application/json',
+    },
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Gemini API error ${res.status}: ${err}`);
   }
-  return _clientPromise;
+
+  const json = await res.json();
+  const text = json.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  return text;
 }
 
 // ── Snippet builder ────────────────────────────────────────────────────────────
@@ -47,8 +65,6 @@ export async function processElemento(
   prezzarioNomeRef: string,
   prezzarioNomeTarget: string,
 ): Promise<ResultadoItem> {
-  const client = await getClient();
-
   const composizioni = elemento.composizioneDei.length > 0
     ? elemento.composizioneDei
     : [{ codiceDei: elemento.descrizione, quantitaComposizione: 1 }];
@@ -59,30 +75,30 @@ export async function processElemento(
     snippet: buildPrezzarioSnippet(allVoci, c.codiceDei),
   }));
 
-  const prompt = `Sei un esperto di prezzari italiani per impianti elettrici.
+  const system = `Sei un esperto di prezzari italiani per impianti elettrici.
+Abbina voci del prezzario DEI (${prezzarioNomeRef}) al prezzario target (${prezzarioNomeTarget}).
+Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;
 
-Devi abbinare voci del prezzario DEI (${prezzarioNomeRef}) al prezzario target (${prezzarioNomeTarget}).
-
-ELEMENTO:
+  const user = `ELEMENTO:
 - Edificio: ${elemento.edificio}
 - Livello: ${elemento.livello}
 - Descrizione: ${elemento.descrizione}
-- Quantità elemento: ${elemento.quantita} ${elemento.um}
+- Quantità: ${elemento.quantita} ${elemento.um}
 - Tipo: ${elemento.tipoPrezzo}
 
-COMPOSIZIONE DEI (voci da abbinare):
+COMPOSIZIONE DEI:
 ${snippets.map(s => `DEI: ${s.codiceDei} (x${s.qtd})\nPrezzario disponibile:\n${s.snippet || '(nessuna voce trovata)'}`).join('\n\n')}
 
-Rispondi SOLO con JSON (nessun testo fuori dal JSON):
+Rispondi con questo JSON:
 {
   "elemento_id": "${elemento.idUnico}",
-  "categoria": "categoria dell'elemento (es: Impianti Elettrici, Cavi, Quadri)",
+  "categoria": "categoria (es: Impianti Elettrici, Cavi, Quadri)",
   "items_processados": [
     {
       "codice_dei_original": "015003r",
       "descricao_dei": "descrizione voce DEI",
-      "codice_prezzario_target": "codice nel prezzario target",
-      "descricao_prezzario_target": "descrizione nel prezzario target",
+      "codice_prezzario_target": "codice nel target",
+      "descricao_prezzario_target": "descrizione nel target",
       "confianca_match": 0.95,
       "quantita_composizione": 1.0,
       "valore_unitario": 2.50,
@@ -92,19 +108,13 @@ Rispondi SOLO con JSON (nessun testo fuori dal JSON):
   "valore_unitario_elemento": 2.50,
   "totale_elemento": 12.50
 }
-
-status può essere: "OK" (confiança ≥ ${CONFIDENCE_OK}), "ALERT" (≥ ${CONFIDENCE_ALERT}), "NAO_ENCONTRADO" (< ${CONFIDENCE_ALERT}).`;
+status: "OK" (≥${CONFIDENCE_OK}), "ALERT" (≥${CONFIDENCE_ALERT}), "NAO_ENCONTRADO" (<${CONFIDENCE_ALERT})`;
 
   let attempts = 0;
   while (attempts < 3) {
     attempts++;
     try {
-      const msg = await client.messages.create({
-        model: CLAUDE_MODEL,
-        max_tokens: MAX_TOKENS,
-        messages: [{ role: 'user', content: prompt }],
-      });
-      const text = (msg.content[0] as any).text as string;
+      const text = await geminiGenerate(system, user, 4096);
       const data = JSON.parse(text.replace(/```json|```/g, '').trim());
       return parseProcessResponse(data, elemento, prezzarioNomeTarget);
     } catch (e) {
@@ -138,40 +148,40 @@ export function parseProcessResponse(
   }
 
   return {
-    idElemento:         elemento.idUnico,
-    edificio:           elemento.edificio,
-    livello:            elemento.livello,
-    zona:               elemento.zona,
-    categoria:          data.categoria ?? 'Geral',
+    idElemento:          elemento.idUnico,
+    edificio:            elemento.edificio,
+    livello:             elemento.livello,
+    zona:                elemento.zona,
+    categoria:           data.categoria ?? 'Geral',
     descrizioneElemento: elemento.descrizione,
-    tipoPrezzo:         elemento.tipoPrezzo,
-    quantitaElemento:   elemento.quantita,
-    unidade:            elemento.um,
-    valoreUnitario:     data.valore_unitario_elemento ?? 0,
-    total:              data.totale_elemento ?? 0,
+    tipoPrezzo:          elemento.tipoPrezzo,
+    quantitaElemento:    elemento.quantita,
+    unidade:             elemento.um,
+    valoreUnitario:      data.valore_unitario_elemento ?? 0,
+    total:               data.totale_elemento ?? 0,
     originePrezzo,
-    status:             overallStatus,
+    status:              overallStatus,
     subItems,
   };
 }
 
 export function buildFallback(elemento: Elemento, reason: string): ResultadoItem {
   return {
-    idElemento:         elemento.idUnico,
-    edificio:           elemento.edificio,
-    livello:            elemento.livello,
-    zona:               elemento.zona,
-    categoria:          'Geral',
+    idElemento:          elemento.idUnico,
+    edificio:            elemento.edificio,
+    livello:             elemento.livello,
+    zona:                elemento.zona,
+    categoria:           'Geral',
     descrizioneElemento: elemento.descrizione,
-    tipoPrezzo:         elemento.tipoPrezzo,
-    quantitaElemento:   elemento.quantita,
-    unidade:            elemento.um,
-    valoreUnitario:     0,
-    total:              0,
-    originePrezzo:      'ERRO',
-    status:             'NAO_ENCONTRADO',
-    subItems:           [],
-    notes:              `Erro: ${reason}`,
+    tipoPrezzo:          elemento.tipoPrezzo,
+    quantitaElemento:    elemento.quantita,
+    unidade:             elemento.um,
+    valoreUnitario:      0,
+    total:               0,
+    originePrezzo:       'ERRO',
+    status:              'NAO_ENCONTRADO',
+    subItems:            [],
+    notes:               `Erro: ${reason}`,
   };
 }
 
@@ -181,53 +191,47 @@ export function buildNvpResult(
   originePrezzo: string,
 ): ResultadoItem {
   return {
-    idElemento:         elemento.idUnico,
-    edificio:           elemento.edificio,
-    livello:            elemento.livello,
-    zona:               elemento.zona,
-    categoria:          'NVP',
+    idElemento:          elemento.idUnico,
+    edificio:            elemento.edificio,
+    livello:             elemento.livello,
+    zona:                elemento.zona,
+    categoria:           'NVP',
     descrizioneElemento: elemento.descrizione,
-    tipoPrezzo:         'NVP',
-    quantitaElemento:   elemento.quantita,
-    unidade:            elemento.um,
+    tipoPrezzo:          'NVP',
+    quantitaElemento:    elemento.quantita,
+    unidade:             elemento.um,
     valoreUnitario,
-    total:              valoreUnitario * elemento.quantita,
+    total:               valoreUnitario * elemento.quantita,
     originePrezzo,
-    status:             'NVP',
-    subItems:           [],
+    status:              'NVP',
+    subItems:            [],
   };
 }
 
+// ── Chat command ───────────────────────────────────────────────────────────────
 export async function chatCommand(
-  idElemento: string,
+  _idElemento: string,
   userText: string,
   currentResult: ResultadoItem,
   history: ChatMessage[],
 ): Promise<{ mensagem: string; alteracoes: Partial<ResultadoItem>; warnings: string[] }> {
-  const client = await getClient();
-
-  const historyMessages = history.slice(-6).map(m => ({
-    role: m.role as 'user' | 'assistant',
-    content: m.content,
-  }));
-
-  const systemPrompt = `Sei un assistente per il computo metrico. L'utente può correggere dati di un elemento.
-Rispondi SOLO con JSON:
+  const system = `Sei un assistente per il computo metrico. L'utente può correggere dati di un elemento.
+Rispondi SOLO con JSON valido:
 {
   "tipo_comando": "alteracao|consulta|erro",
   "sucesso": true,
-  "mensagem_usuario": "messaggio all'utente in portoghese",
-  "alteracoes": {
-    "valoreUnitario": 2.50,
-    "total": 12.50,
-    "categoria": "...",
-    "originePrezzo": "..."
-  },
+  "mensagem_usuario": "messaggio in portoghese",
+  "alteracoes": { "valoreUnitario": 2.50, "total": 12.50, "categoria": "...", "originePrezzo": "..." },
   "warnings": []
 }
 Il campo "alteracoes" deve contenere SOLO i campi modificati.`;
 
-  const userPrompt = `Elemento attuale:
+  // Build simple conversation context from history
+  const historyContext = history.slice(-4)
+    .map(m => `${m.role === 'user' ? 'Utente' : 'Assistente'}: ${m.content}`)
+    .join('\n');
+
+  const user = `${historyContext ? `Conversazione precedente:\n${historyContext}\n\n` : ''}Elemento attuale:
 ID: ${currentResult.idElemento}
 Descrizione: ${currentResult.descrizioneElemento}
 Edificio: ${currentResult.edificio} / Livello: ${currentResult.livello}
@@ -240,16 +244,7 @@ Status: ${currentResult.status}
 Comando utente: "${userText}"`;
 
   try {
-    const msg = await client.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: [
-        ...historyMessages,
-        { role: 'user', content: userPrompt },
-      ],
-    });
-    const text = (msg.content[0] as any).text as string;
+    const text = await geminiGenerate(system, user, 1024);
     const data = JSON.parse(text.replace(/```json|```/g, '').trim());
     return {
       mensagem:   data.mensagem_usuario ?? 'Operação concluída.',
