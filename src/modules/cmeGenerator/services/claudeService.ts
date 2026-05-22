@@ -101,9 +101,12 @@ Hai profonda conoscenza di:
 - Codici DEI formato: es. 015003r, E.01.010.a, S.02.003
 - Abbreviazioni comuni: UM (cad, m, kg, kW, h), NVP (Nessun Valore di Prezzario)
 
+REGOLA PRINCIPALE: Il campo "codice_dei_original" contiene la TARIFFA indicata nel CSV Revit.
+La TARIFFA è il codice primario di abbinamento — cerca prima per corrispondenza ESATTA di codice/tariffa nel prezzario target.
+Solo se non trovi corrispondenza esatta, usa la descrizione per trovare la voce più simile.
 Abbina voci del prezzario DEI (${prezzarioNomeRef}) al prezzario target (${prezzarioNomeTarget}).
-Priorità di abbinamento: codice esatto > descrizione simile > categoria equivalente.
-Se la voce non esiste nel target, usa status NAO_ENCONTRADO.
+Priorità: 1° codice TARIFFA esatto → 2° descrizione simile → 3° categoria equivalente.
+Se la voce non esiste, usa status NAO_ENCONTRADO.
 Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;
 
   const user = `ELEMENTO:

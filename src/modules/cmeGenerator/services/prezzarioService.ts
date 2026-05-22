@@ -14,20 +14,34 @@ import type { PrezzarioRecord, PrezzarioVoce } from '../types';
 
 const BATCH_SIZE = 500;
 
-// ── Column aliases for flexible Excel/CSV parsing ─────────────────────────────
-const CODICE_ALIASES    = ['codice', 'cod', 'code', 'articolo', 'cod_voce'];
-const DESC_ALIASES      = ['descrizione', 'description', 'desc', 'voce'];
-const VALORE_ALIASES    = ['valore_unitario', 'valore', 'prezzo', 'price', 'importo'];
-const UM_ALIASES        = ['um', 'unità', 'unita', 'unit', 'udm'];
-const CATEGORIA_ALIASES = ['categoria', 'category', 'cat', 'tipo'];
+// ── Column aliases for prezzario Excel/CSV parsing ────────────────────────────
+// TARIFFA is the primary match key — it’s what the Revit CSV references.
+// We check for it FIRST before generic ‘codice’ names.
+const TARIFFA_ALIASES   = ['tariffa', 'tariff', 'cod_tariffa', 'codicetariffa'];
+const CODICE_ALIASES    = ['codice', 'cod', 'code', 'articolo', 'cod_voce', 'id_voce', 'voce_id'];
+const DESC_ALIASES      = ['descrizione', 'descrip', 'description', 'desc', 'voce', 'lavoro', 'lavorazione'];
+const VALORE_ALIASES    = ['prezzo_unitario', 'valore_unitario', 'valore', 'prezzo', 'price', 'importo', 'costo', 'euro'];
+const UM_ALIASES        = ['um', 'u.m.', 'unità', 'unita', 'unit', 'udm', 'misura'];
+const CATEGORIA_ALIASES = ['categoria', 'category', 'cat', 'tipo', 'capitolo', 'sezione', 'gruppo'];
 
 function findCol(headers: string[], aliases: string[]): string | undefined {
-  const lower = headers.map(h => h.toLowerCase().trim());
+  const lower = headers.map(h => h.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_'));
   for (const alias of aliases) {
+    // Exact match first
+    const exact = lower.findIndex(h => h === alias);
+    if (exact >= 0) return headers[exact];
+  }
+  for (const alias of aliases) {
+    // Partial match fallback
     const idx = lower.findIndex(h => h.includes(alias));
     if (idx >= 0) return headers[idx];
   }
   return undefined;
+}
+
+// Returns the codice column: TARIFFA takes absolute priority over generic 'codice'
+function findCodiceCol(headers: string[]): string | undefined {
+  return findCol(headers, TARIFFA_ALIASES) ?? findCol(headers, CODICE_ALIASES);
 }
 
 // ── Parse an uploaded Excel (.xlsx) or CSV file into PrezzarioVoce[] ─────────
@@ -50,15 +64,17 @@ export async function parsePrezzarioFile(file: File): Promise<PrezzarioVoce[]> {
   const headers: string[] = [];
   firstRow.eachCell({ includeEmpty: true }, cell => headers.push(String(cell.value ?? '')));
 
-  const colCodice    = findCol(headers, CODICE_ALIASES);
+  // TARIFFA is the primary codice — stored as `codice` in our DB for uniform lookup
+  const colCodice    = findCodiceCol(headers);
   const colDesc      = findCol(headers, DESC_ALIASES);
   const colValore    = findCol(headers, VALORE_ALIASES);
   const colUm        = findCol(headers, UM_ALIASES);
   const colCategoria = findCol(headers, CATEGORIA_ALIASES);
 
   if (!colCodice || !colDesc || !colValore) {
+    const found = headers.filter(Boolean).join(', ');
     throw new Error(
-      `O arquivo deve ter colunas: CODICE, DESCRIZIONE, VALORE.\nEncontradas: ${headers.join(', ')}`
+      `O arquivo deve ter colunas: TARIFFA (ou CODICE), DESCRIZIONE, VALORE.\nColunas encontradas: ${found}`
     );
   }
 
