@@ -19,10 +19,11 @@ const BATCH_SIZE = 500;
 // We check for it FIRST before generic ‘codice’ names.
 const TARIFFA_ALIASES   = ['tariffa', 'tariff', 'cod_tariffa', 'codicetariffa'];
 const CODICE_ALIASES    = ['codice', 'cod', 'code', 'articolo', 'cod_voce', 'id_voce', 'voce_id'];
-const DESC_ALIASES      = ['descrizione', 'descrip', 'description', 'desc', 'voce', 'lavoro', 'lavorazione'];
+const DESC_ALIASES      = ['descrizione', 'descrizione_dell', 'descrip', 'description', 'desc', 'voce', 'lavoro', 'lavorazione'];
 const VALORE_ALIASES    = ['prezzo_unitario', 'valore_unitario', 'valore', 'prezzo', 'price', 'importo', 'costo', 'euro'];
 const UM_ALIASES        = ['um', 'u.m.', 'unità', 'unita', 'unit', 'udm', 'misura'];
-const CATEGORIA_ALIASES = ['categoria', 'category', 'cat', 'tipo', 'capitolo', 'sezione', 'gruppo'];
+// 'prezzo_descrittivo' is captured here when no explicit category column exists
+const CATEGORIA_ALIASES = ['categoria', 'category', 'cat', 'tipo', 'capitolo', 'sezione', 'gruppo', 'prezzo_descrittivo'];
 
 function findCol(headers: string[], aliases: string[]): string | undefined {
   const lower = headers.map(h => h.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_'));
@@ -103,7 +104,8 @@ function parseCsvText(text: string): PrezzarioVoce[] {
   const sep = lines[0].includes(';') ? ';' : ',';
   const headers = lines[0].split(sep).map(h => h.trim().replace(/^["']|["']$/g, ''));
 
-  const colCodice    = findCol(headers, CODICE_ALIASES) ?? headers[0];
+  // TARIFFA takes priority as primary codice — same logic as the XLSX path
+  const colCodice    = findCodiceCol(headers) ?? headers[0];
   const colDesc      = findCol(headers, DESC_ALIASES)   ?? headers[1];
   const colValore    = findCol(headers, VALORE_ALIASES) ?? headers[2];
   const colUm        = findCol(headers, UM_ALIASES);
