@@ -22,8 +22,8 @@ const CODICE_ALIASES    = ['codice', 'cod', 'code', 'articolo', 'cod_voce', 'id_
 const DESC_ALIASES      = ['descrizione', 'descrizione_dell', 'descrip', 'description', 'desc', 'voce', 'lavoro', 'lavorazione'];
 const VALORE_ALIASES    = ['prezzo_unitario', 'valore_unitario', 'valore', 'prezzo', 'price', 'importo', 'costo', 'euro'];
 const UM_ALIASES        = ['um', 'u.m.', 'unità', 'unita', 'unit', 'udm', 'misura'];
-// 'prezzo_descrittivo' is captured here when no explicit category column exists
-const CATEGORIA_ALIASES = ['categoria', 'category', 'cat', 'tipo', 'capitolo', 'sezione', 'gruppo', 'prezzo_descrittivo'];
+// categoria is NOT from the prezzario — it comes from the Revit CSV export
+const CATEGORIA_ALIASES = ['categoria', 'category', 'cat', 'tipo', 'capitolo', 'sezione', 'gruppo'];
 
 function findCol(headers: string[], aliases: string[]): string | undefined {
   const lower = headers.map(h => h.toLowerCase().trim().replace(/[^a-z0-9_]/g, '_'));
@@ -75,7 +75,7 @@ export async function parsePrezzarioFile(file: File): Promise<PrezzarioVoce[]> {
   if (!colCodice || !colDesc || !colValore) {
     const found = headers.filter(Boolean).join(', ');
     throw new Error(
-      `O arquivo deve ter colunas: TARIFFA (ou CODICE), DESCRIZIONE, VALORE.\nColunas encontradas: ${found}`
+      `O arquivo deve ter colunas: TARIFFA, DESCRIZIONE, PREZZO e UM.\nColunas encontradas: ${found}`
     );
   }
 
