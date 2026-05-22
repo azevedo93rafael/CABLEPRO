@@ -4,7 +4,8 @@
 // Uses Google Gemini API (free tier) via native fetch — no extra SDK needed.
 // Key: VITE_GEMINI_API_KEY (same key already used by the rest of the app)
 // ─────────────────────────────────────────────────────────────────────────────
-import type { Elemento, PrezzarioVoce, ResultadoItem, SubItem, StatusItem, ChatMessage } from '../types';
+import type { Elemento, PrezzarioVoce, ResultadoItem, SubItem, StatusItem, ChatMessage, CmeExample } from '../types';
+import { findSimilarExamples, incrementExampleUsage } from './examplesService';
 
 const GEMINI_MODEL     = 'gemini-2.0-flash';   // free tier, fast
 const GEMINI_BASE_URL  = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -61,6 +62,15 @@ function buildPrezzarioSnippet(voci: PrezzarioVoce[], codiceDei: string): string
     .join('\n');
 }
 
+// ── Build few-shot block from confirmed examples ─────────────────────────────
+function buildExamplesBlock(examples: CmeExample[]): string {
+  if (examples.length === 0) return '';
+  const lines = examples.map(e =>
+    `DEI: ${e.codiceDei || '—'} | "${e.descrizioneDei || e.descrizioneElemento}" → Target: ${e.codiceTarget} | "${e.descrizioneTarget}" | €${e.valoreUnitario.toFixed(2)} ${e.um} | ${e.categoria}`
+  );
+  return `\nESEMPI CONFERMATI DALL'AZIENDA (usa come riferimento prioritario):\n${lines.join('\n')}\n`;
+}
+
 // ── Main: process one Elemento against the target prezzario ───────────────────
 export async function processElemento(
   elemento: Elemento,
@@ -77,6 +87,11 @@ export async function processElemento(
     qtd: c.quantitaComposizione,
     snippet: buildPrezzarioSnippet(allVoci, c.codiceDei),
   }));
+
+  // ── Fetch similar confirmed examples from the learning bank ──────────────
+  const similarExamples = await findSimilarExamples(elemento.descrizione, 8);
+  const examplesBlock   = buildExamplesBlock(similarExamples);
+  const exampleIds      = similarExamples.map(e => e.id!).filter(Boolean);
 
   const system = `Sei un esperto di prezzari italiani per impianti elettrici e tecnologici.
 Hai profonda conoscenza di:
@@ -97,7 +112,7 @@ Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;
 - Descrizione: ${elemento.descrizione}
 - Quantità: ${elemento.quantita} ${elemento.um}
 - Tipo: ${elemento.tipoPrezzo}
-
+${examplesBlock}
 COMPOSIZIONE DEI:
 ${snippets.map(s => `DEI: ${s.codiceDei} (x${s.qtd})\nPrezzario disponibile:\n${s.snippet || '(nessuna voce trovata)'}`).join('\n\n')}
 
@@ -128,7 +143,10 @@ status: "OK" (≥${CONFIDENCE_OK}), "ALERT" (≥${CONFIDENCE_ALERT}), "NAO_ENCON
     try {
       const text = await geminiGenerate(system, user, 4096);
       const data = JSON.parse(text.replace(/```json|```/g, '').trim());
-      return parseProcessResponse(data, elemento, prezzarioNomeTarget);
+      const result = parseProcessResponse(data, elemento, prezzarioNomeTarget);
+      // Increment usage counters for examples that were actually used
+      if (exampleIds.length > 0) incrementExampleUsage(exampleIds).catch(() => {});
+      return result;
     } catch (e) {
       if (attempts >= 3) return buildFallback(elemento, String(e));
       await new Promise(r => setTimeout(r, 1000 * attempts));

@@ -88,8 +88,46 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-// ── Config stored in IndexedDB ────────────────────────────────────────────────
+// ── Config (Supabase key-value) ───────────────────────────────────────────────
 export interface CmeConfig {
   chave: string;
   valor: string;
+}
+
+// ── Learning system ───────────────────────────────────────────────────────────
+
+/** A confirmed match stored in cme_examples for future AI context injection */
+export interface CmeExample {
+  id?: number;
+  descrizioneElemento: string;
+  codiceDei:           string;
+  descrizioneDei:      string;
+  codiceTarget:        string;
+  descrizioneTarget:   string;
+  valoreUnitario:      number;
+  um:                  string;
+  categoria:           string;
+  scoreConfirmacao:    number; // 1.0 = admin-approved, 0.7 = user-corrected
+  vezesUsado:          number;
+  aprovadoPor?:        string;
+}
+
+/** Summary counts for the review screen */
+export interface ReviewStats {
+  total:          number;
+  ok:             number;
+  alert:          number;
+  naoEncontrado:  number;
+  nvp:            number;
+  aprovados:      number;
+}
+
+/** Per-item decision made during review */
+export type ReviewItemStatus = 'pending' | 'approved' | 'corrected' | 'rejected';
+
+/** ResultadoItem enriched with review decision */
+export interface ResultadoItemReview extends ResultadoItem {
+  reviewStatus:    ReviewItemStatus;
+  correctedValore?: number;     // if user manually changed the price
+  correctedCodice?: string;     // if user manually changed the target code
 }

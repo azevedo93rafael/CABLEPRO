@@ -1,17 +1,19 @@
 // src/modules/cmeGenerator/pages/CmeGeneratorModule.tsx
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, BarChart2 } from 'lucide-react';
+import { ChevronLeft, BarChart2, Brain } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CmeProvider, useCme } from '../context/CmeContext';
 import { SetupView } from './SetupView';
 import { ProcessingView } from './ProcessingView';
 import { ResultsView } from './ResultsView';
+import { ReviewView } from './ReviewView';
 import { ChatView } from './ChatView';
 import { listPrezzarios } from '../services/prezzarioService';
+import { getExamplesCount } from '../services/examplesService';
 import type { PrezzarioRecord } from '../types';
 import type { UserProfile } from '../../../context/AuthContext';
 
-type View = 'setup' | 'processing' | 'results';
+type View = 'setup' | 'processing' | 'review' | 'results';
 
 interface Props {
   user: UserProfile;
@@ -24,6 +26,7 @@ function CmeModuleInner({ user, onBack }: Props) {
   const [view, setView] = useState<View>('setup');
   const [activeTab, setActiveTab] = useState<'results' | 'chat'>('results');
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+  const [examplesCount, setExamplesCount] = useState(0);
 
   // Prezzario state (loaded from Supabase — shared across all users)
   const [prezzarios, setPrezzarios] = useState<PrezzarioRecord[]>([]);
@@ -36,6 +39,8 @@ function CmeModuleInner({ user, onBack }: Props) {
       if (list.length > 0 && !refPrezzarioId) setRefPrezzarioId(list[0].id!);
       if (list.length > 0 && !targetPrezzarioId) setTargetPrezzarioId(list[list.length > 1 ? 1 : 0].id!);
     });
+    // Load example bank count for display
+    getExamplesCount().then(setExamplesCount).catch(() => {});
   }, []);
 
   const refName    = prezzarios.find(p => p.id === refPrezzarioId)?.nome ?? 'DEI';
@@ -47,9 +52,10 @@ function CmeModuleInner({ user, onBack }: Props) {
   }
 
   const NAV = [
-    { id: 'setup',      label: '1 · Carregamento', active: view === 'setup' },
+    { id: 'setup',      label: '1 · Carregamento',  active: view === 'setup' },
     { id: 'processing', label: '2 · Processamento', active: view === 'processing' },
-    { id: 'results',    label: '3 · Resultados', active: view === 'results' },
+    { id: 'review',     label: '3 · Revisão',       active: view === 'review' },
+    { id: 'results',    label: '4 · Resultados',    active: view === 'results' },
   ] as const;
 
   return (
@@ -105,6 +111,13 @@ function CmeModuleInner({ user, onBack }: Props) {
           </>
         )}
 
+        {/* Example bank badge */}
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white/40">
+          <Brain size={12} className="text-[#E94560]/60" />
+          <span>{examplesCount.toLocaleString('it-IT')} exemplos
+          </span>
+        </div>
+
         {/* Stats badge */}
         {state.resultados.size > 0 && (
           <div className="flex gap-3 text-xs">
@@ -144,7 +157,15 @@ function CmeModuleInner({ user, onBack }: Props) {
               targetPrezzarioId={targetPrezzarioId!}
               refPrezzarioName={refName}
               targetPrezzarioName={targetName}
-              onDone={() => setView('results')}
+              onDone={() => setView('review')}
+            />
+          )}
+
+          {view === 'review' && (
+            <ReviewView
+              user={user}
+              onFinish={() => { setView('results'); getExamplesCount().then(setExamplesCount).catch(() => {}); }}
+              onSkip={() => setView('results')}
             />
           )}
 
