@@ -361,6 +361,7 @@ export interface Translation {
     cableFillDesc: string;
     capitolatoDesc: string;
     projectManagementDesc: string;
+    cmeGeneratorDesc: string;
     enter: string;
   };
   projectHub: {

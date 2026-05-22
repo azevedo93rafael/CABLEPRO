@@ -38,6 +38,12 @@ export const MODULE_THEMES: Record<string, ModuleTheme> = {
     accent:      '#F59E0B', // amber-500
     accentHover: '#D97706', // amber-600
   },
+  'cme-generator': {
+    primary:     '#0F3460', // deep navy
+    dark:        '#0A2240', // deeper navy
+    accent:      '#16213E', // accent navy
+    accentHover: '#E94560', // vivid red-pink accent
+  },
 };
 
 export const DEFAULT_THEME: ModuleTheme = MODULE_THEMES['cablefill'];

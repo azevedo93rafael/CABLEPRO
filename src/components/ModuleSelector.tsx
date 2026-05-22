@@ -1,12 +1,12 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { Layers, FileText, Zap, ArrowRight, CheckCircle2, Globe, ClipboardCheck, Sun, Moon } from 'lucide-react';
+import { Layers, FileText, Zap, ArrowRight, CheckCircle2, Globe, ClipboardCheck, BarChart2, Sun, Moon } from 'lucide-react';
 import { Translation, Language } from '../types';
 import { MODULE_THEMES } from '../config/moduleThemes';
 import { useApp } from '../context/AppContext';
 
 interface ModuleSelectorProps {
-  onSelect: (module: 'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management') => void;
+  onSelect: (module: 'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | 'cme-generator') => void;
   t: Translation;
   lang: Language;
   setLang: (lang: Language) => void;
@@ -63,6 +63,18 @@ const MODULE_CONFIG = [
     },
     theme: MODULE_THEMES['project-management'],
   },
+  {
+    id: 'cme-generator' as const,
+    icon: BarChart2,
+    title: 'CME Generator',
+    descKey: 'cmeGeneratorDesc' as const,
+    features: {
+      'pt-BR': ['MATCH VIA CLAUDE AI', 'EXPORTAÇÃO EXCEL 5 ABAS'],
+      en: ['CLAUDE AI PRICE MATCHING', '5-SHEET EXCEL EXPORT'],
+      it: ['MATCH PREZZI VIA AI', 'EXPORT EXCEL 5 FOGLI'],
+    },
+    theme: MODULE_THEMES['cme-generator'],
+  },
 ];
 
 // ── Label localisation ─────────────────────────────────────────────────────────
@@ -78,7 +90,7 @@ export function ModuleSelector({
   t,
   lang,
   setLang,
-  allowedModules = ['cablefill', 'capitolato', 'cabine-mt', 'project-management'],
+  allowedModules = ['cablefill', 'capitolato', 'cabine-mt', 'project-management', 'cme-generator'],
 }: ModuleSelectorProps) {
   const { darkMode, setDarkMode } = useApp();
   const visible = MODULE_CONFIG.filter((m) => allowedModules.includes(m.id));
@@ -87,6 +99,7 @@ export function ModuleSelector({
     if (mod.id === 'cablefill') return t.selector.cableFillDesc;
     if (mod.id === 'capitolato') return t.selector.capitolatoDesc;
     if (mod.id === 'project-management') return t.selector.projectManagementDesc;
+    if (mod.id === 'cme-generator') return t.selector.cmeGeneratorDesc;
     return t.cabineMT.moduleDesc;
   };
 

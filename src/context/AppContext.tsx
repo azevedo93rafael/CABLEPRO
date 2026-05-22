@@ -9,8 +9,8 @@ interface AppContextType {
   setDarkMode: (mode: boolean) => void;
   activeTab: 'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users';
   setActiveTab: (tab: 'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users') => void;
-  activeModule: 'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | null;
-  setActiveModule: (module: 'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | null) => void;
+  activeModule: 'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | 'cme-generator' | null;
+  setActiveModule: (module: 'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | 'cme-generator' | null) => void;
   activeTheme: string | null;
   setActiveTheme: (theme: string | null) => void;
   moduleTheme: ModuleTheme;
@@ -28,7 +28,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [lang, setLang] = useState<Language>('it');
   const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'trays' | 'conduits' | 'cables' | 'database' | 'users'>('dashboard');
-  const [activeModule, setActiveModule] = useState<'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | null>(null);
+  const [activeModule, setActiveModule] = useState<'cablefill' | 'capitolato' | 'cabine-mt' | 'project-management' | 'cme-generator' | null>(null);
   const [activeTheme, setActiveTheme] = useState<string | null>(null);
   const [toastData, setToastData] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [previewZoom, setPreviewZoom] = useState(1);

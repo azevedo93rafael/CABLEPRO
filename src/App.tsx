@@ -23,6 +23,7 @@ import { Toast } from './components/Toast';
 import { Login } from './components/Login';
 import { ModuleSelector } from './components/ModuleSelector';
 import { ShortcutsModal } from './components/ShortcutsModal';
+import { CmeGeneratorModule } from './modules/cmeGenerator/pages/CmeGeneratorModule';
 
 export default function App() {
   const { user, setUser, isSessionVerified } = useAuth();
@@ -54,7 +55,7 @@ export default function App() {
 
   // Module Selector logic
   if (!activeModule) {
-    const ALL_MODULES = ['cablefill', 'capitolato', 'cabine-mt', 'project-management'];
+    const ALL_MODULES = ['cablefill', 'capitolato', 'cabine-mt', 'project-management', 'cme-generator'];
     const allowedModules = user.role === 'admin' ? ALL_MODULES : (user.accessible_modules || []);
     return <ModuleSelector onSelect={setActiveModule} t={TRANSLATIONS[lang]} lang={lang} setLang={setLang} allowedModules={allowedModules} />;
   }
@@ -76,6 +77,18 @@ export default function App() {
     return (
       <CabineMTModule
         key="cabine-mt"
+        user={user as any}
+        onBack={() => setActiveModule(null)}
+        showToast={showToast}
+      />
+    );
+  }
+
+  // CME Generator has its own full-screen layout
+  if (activeModule === 'cme-generator') {
+    return (
+      <CmeGeneratorModule
+        key="cme-generator"
         user={user as any}
         onBack={() => setActiveModule(null)}
         showToast={showToast}

@@ -1,0 +1,218 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// src/modules/cmeGenerator/services/prezzarioService.ts
+// CRUD for prezzarios stored in Supabase.
+//
+// Security model:
+//   - All authenticated users: READ (SELECT)
+//   - Admins only (role='admin'): INSERT, DELETE (enforced by RLS)
+//
+// Large prezzarios (up to 30k voci) are bulk-inserted in batches of 500
+// to avoid timeouts and stay within Supabase's request size limits.
+// ─────────────────────────────────────────────────────────────────────────────
+import { supabase } from '../../../lib/supabase';
+import type { PrezzarioRecord, PrezzarioVoce } from '../types';
+
+const BATCH_SIZE = 500;
+
+// ── Column aliases for flexible Excel/CSV parsing ─────────────────────────────
+const CODICE_ALIASES    = ['codice', 'cod', 'code', 'articolo', 'cod_voce'];
+const DESC_ALIASES      = ['descrizione', 'description', 'desc', 'voce'];
+const VALORE_ALIASES    = ['valore_unitario', 'valore', 'prezzo', 'price', 'importo'];
+const UM_ALIASES        = ['um', 'unità', 'unita', 'unit', 'udm'];
+const CATEGORIA_ALIASES = ['categoria', 'category', 'cat', 'tipo'];
+
+function findCol(headers: string[], aliases: string[]): string | undefined {
+  const lower = headers.map(h => h.toLowerCase().trim());
+  for (const alias of aliases) {
+    const idx = lower.findIndex(h => h.includes(alias));
+    if (idx >= 0) return headers[idx];
+  }
+  return undefined;
+}
+
+// ── Parse an uploaded Excel (.xlsx) or CSV file into PrezzarioVoce[] ─────────
+export async function parsePrezzarioFile(file: File): Promise<PrezzarioVoce[]> {
+  const buffer = await file.arrayBuffer();
+
+  if (file.name.toLowerCase().endsWith('.csv')) {
+    return parseCsvText(new TextDecoder().decode(buffer));
+  }
+
+  // Dynamic import: load ExcelJS only when user actually uploads
+  const { default: ExcelJS } = await import('exceljs');
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buffer);
+
+  const ws = wb.worksheets[0];
+  if (!ws) throw new Error('Nenhuma planilha encontrada no arquivo.');
+
+  const firstRow = ws.getRow(1);
+  const headers: string[] = [];
+  firstRow.eachCell({ includeEmpty: true }, cell => headers.push(String(cell.value ?? '')));
+
+  const colCodice    = findCol(headers, CODICE_ALIASES);
+  const colDesc      = findCol(headers, DESC_ALIASES);
+  const colValore    = findCol(headers, VALORE_ALIASES);
+  const colUm        = findCol(headers, UM_ALIASES);
+  const colCategoria = findCol(headers, CATEGORIA_ALIASES);
+
+  if (!colCodice || !colDesc || !colValore) {
+    throw new Error(
+      `O arquivo deve ter colunas: CODICE, DESCRIZIONE, VALORE.\nEncontradas: ${headers.join(', ')}`
+    );
+  }
+
+  const idxOf = (name: string) => headers.indexOf(name) + 1;
+  const voci: PrezzarioVoce[] = [];
+
+  ws.eachRow({ includeEmpty: false }, (row, rowNum) => {
+    if (rowNum === 1) return;
+    const codice = String(row.getCell(idxOf(colCodice)).value ?? '').trim();
+    if (!codice) return;
+    voci.push({
+      prezzarioId: 0,
+      codice,
+      descrizione: String(row.getCell(idxOf(colDesc)).value ?? '').trim(),
+      valore: parseFloat(String(row.getCell(idxOf(colValore)).value ?? '0').replace(',', '.')) || 0,
+      um:       colUm        ? String(row.getCell(idxOf(colUm)).value ?? 'cad').trim()   : 'cad',
+      categoria: colCategoria ? String(row.getCell(idxOf(colCategoria)).value ?? '').trim() : '',
+    });
+  });
+  return voci;
+}
+
+function parseCsvText(text: string): PrezzarioVoce[] {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const sep = lines[0].includes(';') ? ';' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/^["']|["']$/g, ''));
+
+  const colCodice    = findCol(headers, CODICE_ALIASES) ?? headers[0];
+  const colDesc      = findCol(headers, DESC_ALIASES)   ?? headers[1];
+  const colValore    = findCol(headers, VALORE_ALIASES) ?? headers[2];
+  const colUm        = findCol(headers, UM_ALIASES);
+  const colCategoria = findCol(headers, CATEGORIA_ALIASES);
+  const idx = (n: string | undefined) => n ? headers.indexOf(n) : -1;
+
+  return lines.slice(1).map(line => {
+    const cells = line.split(sep).map(c => c.trim().replace(/^["']|["']$/g, ''));
+    return {
+      prezzarioId: 0,
+      codice:      cells[idx(colCodice)]   ?? '',
+      descrizione: cells[idx(colDesc)]     ?? '',
+      valore:      parseFloat((cells[idx(colValore)] ?? '0').replace(',', '.')) || 0,
+      um:          colUm        ? (cells[idx(colUm)]        ?? 'cad') : 'cad',
+      categoria:   colCategoria ? (cells[idx(colCategoria)] ?? '')    : '',
+    };
+  }).filter(v => v.codice);
+}
+
+// ── Save prezzario header + voci to Supabase ──────────────────────────────────
+// Voci are inserted in batches to handle up to 30k rows efficiently.
+export async function savePrezzario(
+  nome: string,
+  voci: PrezzarioVoce[],
+  userId: string,
+): Promise<number> {
+  // 1. Insert header row
+  const { data: header, error: hErr } = await supabase
+    .from('cme_prezzarios')
+    .insert({ nome, total_voci: voci.length, uploaded_by: userId })
+    .select('id')
+    .single();
+
+  if (hErr || !header) throw new Error(`Erro ao salvar prezzario: ${hErr?.message}`);
+  const prezzarioId = header.id as number;
+
+  // 2. Bulk-insert voci in batches of BATCH_SIZE
+  const rows = voci.map(v => ({
+    prezzario_id: prezzarioId,
+    codice:       v.codice,
+    descrizione:  v.descrizione,
+    valore:       v.valore,
+    um:           v.um,
+    categoria:    v.categoria,
+  }));
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const { error: vErr } = await supabase.from('cme_prezzario_voci').insert(batch);
+    if (vErr) throw new Error(`Erro ao inserir voci (lote ${Math.floor(i / BATCH_SIZE) + 1}): ${vErr.message}`);
+  }
+
+  return prezzarioId;
+}
+
+// ── List all prezzarios (shared — visible to every authenticated user) ─────────
+export async function listPrezzarios(): Promise<PrezzarioRecord[]> {
+  const { data, error } = await supabase
+    .from('cme_prezzarios')
+    .select('id, nome, data_import, total_voci')
+    .order('data_import', { ascending: false });
+
+  if (error) throw new Error(`Erro ao listar prezzarios: ${error.message}`);
+
+  return (data ?? []).map(r => ({
+    id:         r.id,
+    nome:       r.nome,
+    dataImport: r.data_import,
+    totalVoci:  r.total_voci,
+  }));
+}
+
+// ── Delete a prezzario and all its voci (admin only — RLS enforces) ────────────
+export async function deletePrezzario(id: number): Promise<void> {
+  // voci are deleted by CASCADE on the FK
+  const { error } = await supabase.from('cme_prezzarios').delete().eq('id', id);
+  if (error) throw new Error(`Erro ao apagar prezzario: ${error.message}`);
+}
+
+// ── Load all voci for a prezzario (paginated to handle 30k rows) ───────────────
+export async function loadVoci(prezzarioId: number): Promise<PrezzarioVoce[]> {
+  const PAGE = 1000;
+  const all: PrezzarioVoce[] = [];
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await supabase
+      .from('cme_prezzario_voci')
+      .select('id, prezzario_id, codice, descrizione, valore, um, categoria')
+      .eq('prezzario_id', prezzarioId)
+      .range(from, from + PAGE - 1);
+
+    if (error) throw new Error(`Erro ao carregar voci: ${error.message}`);
+    if (!data || data.length === 0) break;
+
+    all.push(...data.map(r => ({
+      id:          r.id,
+      prezzarioId: r.prezzario_id,
+      codice:      r.codice,
+      descrizione: r.descrizione,
+      valore:      Number(r.valore),
+      um:          r.um,
+      categoria:   r.categoria,
+    })));
+
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+
+  return all;
+}
+
+// ── Config: per-user key-value store ──────────────────────────────────────────
+export async function getConfig(userId: string, chave: string): Promise<string | undefined> {
+  const { data } = await supabase
+    .from('cme_config')
+    .select('valor')
+    .eq('user_id', userId)
+    .eq('chave', chave)
+    .single();
+  return data?.valor ?? undefined;
+}
+
+export async function setConfig(userId: string, chave: string, valor: string): Promise<void> {
+  await supabase
+    .from('cme_config')
+    .upsert({ user_id: userId, chave, valor }, { onConflict: 'user_id,chave' });
+}

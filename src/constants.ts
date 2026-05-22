@@ -247,6 +247,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       cableFillDesc: 'Professional tool for calculating cable tray and conduit filling with 3D visualization.',
       capitolatoDesc: 'Automated generation of technical specifications and material books for engineering projects.',
       projectManagementDesc: 'Interactive hub for electrical projects with visual checklists.',
+      cmeGeneratorDesc: 'AI-powered metric computation engine — imports Revit data, matches prices via Claude, exports multi-sheet Excel.',
       enter: 'ENTER MODULE',
     },
     projectHub: {
@@ -811,6 +812,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       cableFillDesc: 'Ferramenta profissional para cálculo de preenchimento de eletrocalhas e eletrodutos com visualização 3D.',
       capitolatoDesc: 'Geração automatizada de especificações técnicas e livros de materiais para projetos de engenharia.',
       projectManagementDesc: 'Hub interativo de gestão de projetos elétricos com checklists visuais.',
+      cmeGeneratorDesc: 'Motor de cómputo métrico com IA — importa dados do Revit, faz match de preços via Claude, exporta Excel com 5 abas.',
       enter: 'ENTRAR NO MÓDULO',
     },
     projectHub: {
@@ -1374,6 +1376,7 @@ export const TRANSLATIONS: Record<Language, Translation> = {
       cableFillDesc: 'Strumento professionale per il calcolo del riempimento di passerelle e tubi con visualizzazione 3D.',
       capitolatoDesc: 'Generazione automatizzata di capitolati tecnici e libri materiali per progetti di ingegneria.',
       projectManagementDesc: 'Hub interattivo di gestione progetti elettrici con checklist visive.',
+      cmeGeneratorDesc: 'Motore di computo metrico con AI — importa dati Revit, abbina prezzi via Claude, esporta Excel a 5 fogli.',
       enter: 'ENTRA NEL MODULO',
     },
     projectHub: {
