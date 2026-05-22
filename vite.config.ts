@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       // Exclude heavy Node-SDK packages from pre-bundling.
       // They are loaded lazily via dynamic import() at runtime.
-      exclude: ['@anthropic-ai/sdk', 'exceljs'],
+      exclude: ['exceljs'],
     },
   };
 });
