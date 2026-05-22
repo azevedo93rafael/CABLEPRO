@@ -3,25 +3,19 @@
 // Domain types for the CME Generator module
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type TipoPrezzo = 'PREZZARIO' | 'NVP';
-export type StatusItem = 'OK' | 'ALERT' | 'NAO_ENCONTRADO' | 'NVP';
+export type StatusItem = 'OK' | 'ALERT' | 'NAO_ENCONTRADO';
 
-// ── Raw Revit CSV row ──────────────────────────────────────────────────────────
-export interface ComposizioneItem {
-  codiceDei: string;
-  quantitaComposizione: number;
-}
-
+// ── Raw Revit CSV row (WBS schema) ───────────────────────────────────────────
 export interface Elemento {
-  idUnico: string;
-  edificio: string;
-  livello: string;
-  zona: string;
-  descrizione: string;
-  quantita: number;
-  um: string;
-  composizioneDei: ComposizioneItem[];
-  tipoPrezzo: TipoPrezzo;
+  idUnico:    string;
+  edificio:   string;   // WBSs_1 — building
+  livello:    string;   // WBSs_2 — floor / level
+  zona:       string;   // WBSs_3 — space within floor
+  descricao:  string;   // Descricao — element description for the computo
+  tariffa:    string;   // WBSt_1 or WBSt_3 — prezzario match key
+  quantita:   number;   // Count × fatorWBS — final quantity for the computo line
+  fatorWBS:   number;   // WBSt_2 or WBSt_4 — multiplier applied to Count
+  countRevit: number;   // Count — raw Revit quantity before factor
 }
 
 // ── Processed result ──────────────────────────────────────────────────────────
