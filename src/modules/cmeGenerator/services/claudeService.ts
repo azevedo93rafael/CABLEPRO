@@ -11,10 +11,13 @@ const GEMINI_BASE_URL  = 'https://generativelanguage.googleapis.com/v1beta/model
 const CONFIDENCE_OK    = 0.85;
 const CONFIDENCE_ALERT = 0.60;
 
-// API key — re-uses the same key already configured for the rest of the app
+// API key — supports both naming conventions:
+//   VITE_GEMINI_API_KEY  (explicit VITE_ prefix)
+//   GEMINI_API_KEY       (inlined at build time by vite.config define block)
+declare const process: { env: Record<string, string | undefined> };
 const API_KEY: string | undefined =
   (import.meta.env.VITE_GEMINI_API_KEY as string | undefined)
-  ?? (import.meta.env.GEMINI_API_KEY as string | undefined);
+  ?? (process.env.GEMINI_API_KEY as string | undefined);
 
 
 // ── Core fetch wrapper ────────────────────────────────────────────────────────
@@ -75,8 +78,17 @@ export async function processElemento(
     snippet: buildPrezzarioSnippet(allVoci, c.codiceDei),
   }));
 
-  const system = `Sei un esperto di prezzari italiani per impianti elettrici.
+  const system = `Sei un esperto di prezzari italiani per impianti elettrici e tecnologici.
+Hai profonda conoscenza di:
+- Prezzario DEI (Tipologia A: a corpo, Tipologia B: composizione a misura)
+- Prezzari regionali italiani (Sicilia, Lombardia, Toscana, ecc.)
+- Voci tipiche: cavi FG16, N07V, tubazioni PVC/IRO, quadri elettrici, prese UNEL, corpi illuminanti, impianti speciali
+- Codici DEI formato: es. 015003r, E.01.010.a, S.02.003
+- Abbreviazioni comuni: UM (cad, m, kg, kW, h), NVP (Nessun Valore di Prezzario)
+
 Abbina voci del prezzario DEI (${prezzarioNomeRef}) al prezzario target (${prezzarioNomeTarget}).
+Priorità di abbinamento: codice esatto > descrizione simile > categoria equivalente.
+Se la voce non esiste nel target, usa status NAO_ENCONTRADO.
 Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;
 
   const user = `ELEMENTO:
@@ -215,16 +227,22 @@ export async function chatCommand(
   currentResult: ResultadoItem,
   history: ChatMessage[],
 ): Promise<{ mensagem: string; alteracoes: Partial<ResultadoItem>; warnings: string[] }> {
-  const system = `Sei un assistente per il computo metrico. L'utente può correggere dati di un elemento.
+  const system = `Sei un assistente esperto di computo metrico per impianti elettrici in Italia.
+Conosci la terminologia DEI, i prezzari regionali, le norme CEI e le voci tipiche degli impianti.
+L'utente può:
+- Correggere prezzi unitari (es: "cambia il prezzo per 3.50")
+- Cambiare categoria (es: "questa è Illuminazione, non Impianti")
+- Chiedere spiegazioni (es: "perché questo ha status ALERT?")
+- Modificare l'origine del prezzo
 Rispondi SOLO con JSON valido:
 {
   "tipo_comando": "alteracao|consulta|erro",
   "sucesso": true,
-  "mensagem_usuario": "messaggio in portoghese",
+  "mensagem_usuario": "risposta in portoghese brasiliano (pt-BR)",
   "alteracoes": { "valoreUnitario": 2.50, "total": 12.50, "categoria": "...", "originePrezzo": "..." },
   "warnings": []
 }
-Il campo "alteracoes" deve contenere SOLO i campi modificati.`;
+Il campo "alteracoes" deve contenere SOLO i campi effettivamente modificati.`;
 
   // Build simple conversation context from history
   const historyContext = history.slice(-4)
