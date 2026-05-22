@@ -1,6 +1,6 @@
 // src/modules/cmeGenerator/pages/CmeGeneratorModule.tsx
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, BarChart2, Brain } from 'lucide-react';
+import { ChevronLeft, BarChart2, Brain, Settings } from 'lucide-react';
 import { motion } from 'motion/react';
 import { CmeProvider, useCme } from '../context/CmeContext';
 import { SetupView } from './SetupView';
@@ -8,12 +8,13 @@ import { ProcessingView } from './ProcessingView';
 import { ResultsView } from './ResultsView';
 import { ReviewView } from './ReviewView';
 import { ChatView } from './ChatView';
+import { CmeSettingsPage } from './CmeSettingsPage';
 import { listPrezzarios } from '../services/prezzarioService';
 import { getExamplesCount } from '../services/examplesService';
 import type { PrezzarioRecord } from '../types';
 import type { UserProfile } from '../../../context/AuthContext';
 
-type View = 'setup' | 'processing' | 'review' | 'results';
+type View = 'setup' | 'processing' | 'review' | 'results' | 'settings';
 
 interface Props {
   user: UserProfile;
@@ -118,6 +119,15 @@ function CmeModuleInner({ user, onBack }: Props) {
           </span>
         </div>
 
+        {/* Settings Button */}
+        <button
+          onClick={() => setView('settings')}
+          className={`p-2 rounded-lg transition-colors ml-2 ${view === 'settings' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white/80 hover:bg-white/5'}`}
+          title="Configurações"
+        >
+          <Settings size={18} />
+        </button>
+
         {/* Stats badge */}
         {state.resultados.size > 0 && (
           <div className="flex gap-3 text-xs">
@@ -175,6 +185,10 @@ function CmeModuleInner({ user, onBack }: Props) {
 
           {view === 'results' && activeTab === 'chat' && (
             <ChatView selectedId={selectedElementId} />
+          )}
+
+          {view === 'settings' && (
+            <CmeSettingsPage user={user} />
           )}
         </motion.div>
       </div>

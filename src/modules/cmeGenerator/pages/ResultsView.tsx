@@ -3,6 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { Download, Search, Filter } from 'lucide-react';
 import { useCme } from '../context/CmeContext';
 import { exportExcel } from '../services/excelExporter';
+import { fillTemplateAndExport } from '../services/excelFiller';
+import { hasTemplate } from '../services/templateService';
 import type { ResultadoItem, StatusItem } from '../types';
 
 const STATUS_BADGE: Record<StatusItem, { label: string; className: string }> = {
@@ -21,6 +23,23 @@ export function ResultsView({ onSelectElement }: ResultsViewProps) {
   const [tab, setTab] = useState<'computo' | 'categoria' | 'livello' | 'edificio' | 'dashboard'>('computo');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<StatusItem | 'ALL'>('ALL');
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const useTemplate = await hasTemplate();
+      if (useTemplate) {
+        await fillTemplateAndExport(results);
+      } else {
+        await exportExcel(results);
+      }
+    } catch (err: any) {
+      alert(err.message || 'Erro na exportação.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const filtered = useMemo(() => {
     return results.filter(r => {
@@ -76,11 +95,12 @@ export function ResultsView({ onSelectElement }: ResultsViewProps) {
           ))}
         </div>
         <button
-          onClick={() => exportExcel(results)}
-          className="flex items-center gap-2 px-4 py-2 bg-green-900/30 border border-green-700/40 rounded-xl text-green-400 text-xs font-bold tracking-widest uppercase hover:bg-green-900/50 transition-colors"
+          onClick={handleExport}
+          disabled={isExporting}
+          className="flex items-center gap-2 px-4 py-2 bg-green-900/30 border border-green-700/40 rounded-xl text-green-400 text-xs font-bold tracking-widest uppercase hover:bg-green-900/50 transition-colors disabled:opacity-50"
         >
           <Download size={14} />
-          EXPORTAR EXCEL
+          {isExporting ? 'A EXPORTAR...' : 'EXPORTAR EXCEL'}
         </button>
       </div>
 
