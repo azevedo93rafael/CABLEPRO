@@ -30,15 +30,21 @@ const COL_WBSs1   = 'WBSs_1';
 const COL_WBSs2   = 'WBSs_2';
 const COL_WBSs3   = 'WBSs_3';
 const COL_COUNT   = 'Count';
+const COL_TIPO    = 'TipoPrezzo'; // optional — 'PREZZARIO' | 'NVP'
 
 // ── Flexible column finder (case-insensitive, trims whitespace) ───────────────
 function resolveCol(headers: string[], target: string): string | undefined {
-  const t = target.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-  // 1. Exact match (normalised)
-  const exact = headers.find(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_') === t);
+  const cleanStr = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const t = cleanStr(target);
+  if (!t) return undefined;
+
+  const exact = headers.find(h => cleanStr(h) === t);
   if (exact) return exact;
-  // 2. Partial match fallback
-  return headers.find(h => h.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').includes(t));
+
+  if (t.length > 2) {
+    return headers.find(h => cleanStr(h).includes(t) || t.includes(cleanStr(h)));
+  }
+  return undefined;
 }
 
 let _counter = 0;
@@ -95,6 +101,9 @@ export function parseRevitCsv(text: string): ParseResult {
   const cLiv   = resolveCol(headers, COL_WBSs2);
   const cZona  = resolveCol(headers, COL_WBSs3);
   const cCount = resolveCol(headers, COL_COUNT);
+  const cTipo  = resolveCol(headers, COL_TIPO); // optional
+  const cUm    = resolveCol(headers, 'UM') ?? resolveCol(headers, 'Unidade') ?? resolveCol(headers, 'Unita') ?? resolveCol(headers, 'Unit');
+  const cTipoImp = resolveCol(headers, 'Tipo di Impianti') ?? resolveCol(headers, 'Tipo di Impianto') ?? resolveCol(headers, 'TipoImpianto') ?? resolveCol(headers, 'TipoImpianti') ?? resolveCol(headers, 'Impianto') ?? resolveCol(headers, 'Impianti') ?? resolveCol(headers, 'Tipo de Instalação') ?? resolveCol(headers, 'Tipo de Instalacao');
 
   // ── Validate required columns ──────────────────────────────────────────────
   const missing: string[] = [];
@@ -131,45 +140,38 @@ export function parseRevitCsv(text: string): ParseResult {
     const edificio = cEdif ? clean(row[cEdif]) : 'SEM_EDIFICIO';
     const livello  = cLiv  ? clean(row[cLiv])  : 'SEM_PAVIMENTO';
     const zona     = cZona ? clean(row[cZona]) : 'SEM_ESPACO';
+    const unidade  = cUm   ? clean(row[cUm])   : undefined;
+    const tipoImpianto = cTipoImp ? clean(row[cTipoImp]) : undefined;
 
-    // ── Line 1: WBSt_1 × WBSt_2 × Count ─────────────────────────────────
-    const tariffa1 = cT1 ? clean(row[cT1]) : '';
-    if (!isBlank(tariffa1)) {
+    // ── Line 1: WBSt_1 × WBSt_2 × Count (Unified with composition) ───────
+    const tariffa1   = cT1 ? clean(row[cT1]) : '';
+    const tipoPrezzo = cTipo ? (clean(row[cTipo]).toUpperCase() || undefined) : undefined;
+    if (!isBlank(tariffa1) || tipoPrezzo === 'NVP') {
+      const finalTariffa = isBlank(tariffa1) && tipoPrezzo === 'NVP' ? 'NVP' : tariffa1;
       const fator1  = cF1 ? num(row[cF1]) : 1;
       const qty1    = count * (fator1 || 1);  // fator 0 treated as 1
 
+      const tariffa2 = cT2 ? clean(row[cT2]) : '';
+      const fator2  = cF2 ? num(row[cF2]) : 1;
+
       elementos.push({
         idUnico:     makeId(edificio, livello, zona),
         edificio,
         livello,
         zona,
         descricao,
-        tariffa:     tariffa1,
+        tariffa:     finalTariffa,
         quantita:    qty1,
         fatorWBS:    fator1,
         countRevit:  count,
+        tipoPrezzo,
+        tariffa2:    !isBlank(tariffa2) ? tariffa2 : undefined,
+        fatorWBS2:   !isBlank(tariffa2) ? (fator2 || 1) : undefined,
+        unidade,
+        tipoImpianto,
       });
     } else {
       warnings.push(`Linha ignorada (WBSt_1 vazio): "${descricao}"`);
-    }
-
-    // ── Line 2: WBSt_3 × WBSt_4 × Count (optional) ───────────────────────
-    const tariffa2 = cT2 ? clean(row[cT2]) : '';
-    if (!isBlank(tariffa2)) {
-      const fator2  = cF2 ? num(row[cF2]) : 1;
-      const qty2    = count * (fator2 || 1);
-
-      elementos.push({
-        idUnico:     makeId(edificio, livello, zona),
-        edificio,
-        livello,
-        zona,
-        descricao,
-        tariffa:     tariffa2,
-        quantita:    qty2,
-        fatorWBS:    fator2,
-        countRevit:  count,
-      });
     }
   }
 

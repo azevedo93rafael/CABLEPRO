@@ -12,6 +12,9 @@ type Action =
   | { type: 'ADD_RESULTADO'; payload: ResultadoItem }
   | { type: 'APPLY_OVERRIDE'; payload: { id: string; changes: Partial<ResultadoItem> } }
   | { type: 'ADD_CHAT_MSG'; payload: { id: string; msg: ChatMessage } }
+  | { type: 'SET_RAW_BIM_OFF_DATA'; payload: any[][] | undefined }
+  | { type: 'SET_PROJECT_ID'; payload: { id: string; name: string } | null }
+  | { type: 'LOAD_PROJECT'; payload: any }
   | { type: 'RESET' };
 
 const initialState: CmeState = {
@@ -49,7 +52,21 @@ function reducer(state: CmeState, action: Action): CmeState {
       return { ...state, chatHistory: history };
     }
     case 'RESET':
-      return { ...initialState, resultados: new Map(), overrides: new Map(), chatHistory: new Map() };
+      return { ...initialState, resultados: new Map(), overrides: new Map(), chatHistory: new Map(), rawBimOffData: undefined };
+    case 'SET_RAW_BIM_OFF_DATA':
+      return { ...state, rawBimOffData: action.payload };
+    case 'SET_PROJECT_ID':
+      return { ...state, projectId: action.payload?.id || null, projectName: action.payload?.name || null };
+    case 'LOAD_PROJECT':
+      return {
+        ...state,
+        elementos: action.payload.elementos || [],
+        resultados: new Map(action.payload.resultados || []),
+        overrides: new Map(action.payload.overrides || []),
+        rawBimOffData: action.payload.rawBimOffData,
+        projectId: action.payload.id,
+        projectName: action.payload.name,
+      };
     default:
       return state;
   }

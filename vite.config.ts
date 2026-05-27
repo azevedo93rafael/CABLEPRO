@@ -25,12 +25,6 @@ export default defineConfig(({ mode }) => {
       globals: true,
       environment: 'node',
     },
-    // ── Prevent Rollup from trying to bundle Node-only SDK internals ──────────
-    // @anthropic-ai/sdk includes server-only sub-paths (agent-toolset, fs-util)
-    // that reference node:crypto, node:fs, etc. Since we use the SDK via
-    // dynamic import() only, we tell Rollup to treat the entire package as
-    // external during the production build. The browser will never load these
-    // sub-paths; only the Claude API call path is exercised at runtime.
     build: {
       rollupOptions: {
         external: (id) => {
@@ -41,9 +35,11 @@ export default defineConfig(({ mode }) => {
       },
     },
     optimizeDeps: {
-      // Exclude heavy Node-SDK packages from pre-bundling.
-      // They are loaded lazily via dynamic import() at runtime.
-      exclude: ['exceljs'],
+      // Exclude heavy Node-only packages from pre-bundling.
+      // exceljs was removed — all Excel operations now use SheetJS (xlsx)
+      // which is 100% browser-native.
+      exclude: [],
     },
   };
 });
+

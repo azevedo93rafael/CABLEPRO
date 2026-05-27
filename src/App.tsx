@@ -56,7 +56,10 @@ export default function App() {
   // Module Selector logic
   if (!activeModule) {
     const ALL_MODULES = ['cablefill', 'capitolato', 'cabine-mt', 'project-management', 'cme-generator'];
-    const allowedModules = user.role === 'admin' ? ALL_MODULES : (user.accessible_modules || []);
+    const ADMIN_EMAIL = 'rafael.azevedo.93@live.com';
+    // Belt-and-suspenders: check both role AND email so stale localStorage never hides modules
+    const isAdmin = user.role === 'admin' || user.email === ADMIN_EMAIL;
+    const allowedModules = isAdmin ? ALL_MODULES : (user.accessible_modules || []);
     return <ModuleSelector onSelect={setActiveModule} t={TRANSLATIONS[lang]} lang={lang} setLang={setLang} allowedModules={allowedModules} />;
   }
 

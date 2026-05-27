@@ -1,115 +1,88 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // src/modules/cmeGenerator/pages/SetupView.tsx
-// Step 1: Load prezzarios (from Supabase) + upload Revit CSV
-// Upload/Delete controls are shown only to admins (role='admin').
+// Step 1: Load Revit CSV + select which prezzarios to use.
+// Prezzario upload/delete is exclusively done in Settings (admin only).
 // ─────────────────────────────────────────────────────────────────────────────
 import React, { useState, useRef } from 'react';
-import { Trash2, Plus, Database, FileSpreadsheet, ChevronRight, AlertCircle, Lock } from 'lucide-react';
+import { FileSpreadsheet, ChevronRight, AlertCircle, Database, Settings } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  listPrezzarios, savePrezzario, deletePrezzario, parsePrezzarioFile
-} from '../services/prezzarioService';
 import { parseRevitCsv } from '../services/csvParser';
+import { parseRevitExcel } from '../services/excelParser';
 import { useCme } from '../context/CmeContext';
-import type { PrezzarioRecord } from '../types';
+import type { PrezzarioRecord, Elemento } from '../types';
 import type { UserProfile } from '../../../context/AuthContext';
 
 interface SetupViewProps {
   user: UserProfile;
   prezzarios: PrezzarioRecord[];
-  setPrezzarios: (p: PrezzarioRecord[]) => void;
   refPrezzarioId: number | null;
   setRefPrezzarioId: (id: number) => void;
   targetPrezzarioId: number | null;
   setTargetPrezzarioId: (id: number) => void;
   onStartProcessing: () => void;
+  onGoToSettings: () => void;
 }
 
 export function SetupView({
   user,
   prezzarios,
-  setPrezzarios,
   refPrezzarioId,
   setRefPrezzarioId,
   targetPrezzarioId,
   setTargetPrezzarioId,
   onStartProcessing,
+  onGoToSettings,
 }: SetupViewProps) {
   const { state, dispatch } = useCme();
-  const [loading, setLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [error, setError]   = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const csvRef = useRef<HTMLInputElement>(null);
 
-  const csvRef  = useRef<HTMLInputElement>(null);
-  const prezRef = useRef<HTMLInputElement>(null);
+  const canProcess = state.elementos.length > 0 && prezzarios.length > 0 &&
+    refPrezzarioId !== null && targetPrezzarioId !== null;
 
-  const isAdmin    = user.role === 'admin';
-  const canProcess = state.elementos.length > 0 && prezzarios.length > 0;
-
-  // ── CSV upload ─────────────────────────────────────────────────────────────
+  // ── CSV do Revit ────────────────────────────────────────────────────────────
 
   async function handleCsvUpload(file: File) {
     setError(null); setSuccess(null);
     try {
-      const text = await file.text();
-      const { elementos, warnings } = parseRevitCsv(text);
+      let elementos: Elemento[] = [];
+      let warnings: string[] = [];
+      let rawBimOffData: any[][] | undefined = undefined;
+
+      if (file.name.toLowerCase().endsWith('.xlsx')) {
+        const buffer = await file.arrayBuffer();
+        const res = await parseRevitExcel(buffer);
+        elementos = res.elementos;
+        warnings = res.warnings;
+        rawBimOffData = res.rawBimOffData;
+      } else {
+        const text = await file.text();
+        const res = parseRevitCsv(text);
+        elementos = res.elementos;
+        warnings = res.warnings;
+      }
+
       dispatch({ type: 'SET_ELEMENTOS', payload: elementos });
-      setSuccess(`✓ ${elementos.length} elementos carregados do CSV`);
+      if (rawBimOffData) {
+        dispatch({ type: 'SET_RAW_BIM_OFF_DATA', payload: rawBimOffData });
+      }
+      setSuccess(`✓ ${elementos.length} elementos carregados do arquivo`);
       if (warnings.length > 0) setError(`Avisos: ${warnings.slice(0, 3).join(', ')}`);
     } catch (e: any) {
-      setError(`Erro ao ler CSV: ${e.message}`);
+      setError(`Erro ao ler arquivo: ${e.message}`);
     }
   }
 
-  // ── Prezzario upload (admin only) ──────────────────────────────────────────
-
-  async function handlePrezzarioUpload(file: File) {
-    if (!isAdmin) return;
-    setError(null); setSuccess(null);
-    setLoading(true);
-    setUploadProgress('Lendo arquivo...');
-    try {
-      const voci = await parsePrezzarioFile(file);
-      setUploadProgress(`Salvando ${voci.length} voci no Supabase...`);
-      const name = file.name.replace(/\.[^.]+$/, '');
-      await savePrezzario(name, voci, user.id);
-      const updated = await listPrezzarios();
-      setPrezzarios(updated);
-      setSuccess(`✓ Prezzario "${name}" salvo com ${voci.length} voci`);
-    } catch (e: any) {
-      setError(`Erro: ${e.message}`);
-    } finally {
-      setLoading(false);
-      setUploadProgress(null);
-    }
-  }
-
-  async function handleDelete(id: number) {
-    if (!isAdmin) return;
-    if (!window.confirm('Apagar este prezzario e todas as suas voci?')) return;
-    try {
-      await deletePrezzario(id);
-      const updated = await listPrezzarios();
-      setPrezzarios(updated);
-      setSuccess('Prezzario apagado.');
-    } catch (e: any) {
-      setError(`Erro ao apagar: ${e.message}`);
-    }
-  }
-
-  function onDrop(type: 'csv' | 'prez') {
-    return (e: React.DragEvent) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (!file) return;
-      if (type === 'csv') handleCsvUpload(file);
-      else if (isAdmin) handlePrezzarioUpload(file);
-    };
+  function onDrop(e: React.DragEvent) {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) handleCsvUpload(file);
   }
 
   return (
     <div className="flex-1 overflow-auto p-8 space-y-8">
+
       {/* ── Alerts ── */}
       <AnimatePresence>
         {error && (
@@ -127,111 +100,90 @@ export function SetupView({
         )}
       </AnimatePresence>
 
-      {/* ── CSV do Revit ── */}
+      {/* ── Step 1: CSV da Revit ─────────────────────────────────────────────── */}
       <section>
-        <h2 className="text-sm font-bold tracking-widest text-white/40 uppercase mb-4">
-          1 — CSV do Revit
+        <h2 className="text-sm font-bold tracking-widest text-gray-500 dark:text-white/40 uppercase mb-4">
+          1 — CSV da Revit
         </h2>
         <div
           onClick={() => csvRef.current?.click()}
-          onDrop={onDrop('csv')}
+          onDrop={onDrop}
           onDragOver={e => e.preventDefault()}
-          className="border-2 border-dashed border-white/10 hover:border-[#E94560]/50 rounded-2xl p-10 flex flex-col items-center gap-4 cursor-pointer transition-colors group"
+          className="border-2 border-dashed border-gray-300 dark:border-white/10 hover:border-[#E94560]/50 rounded-2xl p-10 flex flex-col items-center gap-4 cursor-pointer transition-colors group"
         >
-          <FileSpreadsheet size={36} className="text-white/20 group-hover:text-[#E94560]/60 transition-colors" />
+          <FileSpreadsheet size={36} className="text-gray-300 dark:text-white/20 group-hover:text-[#E94560]/60 transition-colors" />
           <div className="text-center">
-            <p className="text-white/60 text-sm">Arraste ou clique para selecionar o CSV do Revit</p>
+            <p className="text-gray-600 dark:text-white/60 text-sm">Trascina o clicca per selezionare il file da Revit (.csv o .xlsx)</p>
             {state.elementos.length > 0 && (
-              <p className="text-[#E94560] font-bold mt-2">✓ {state.elementos.length} elementos carregados</p>
+              <p className="text-[#E94560] font-bold mt-2">✓ {state.elementos.length} elementi caricati</p>
             )}
           </div>
-          <input ref={csvRef} type="file" accept=".csv" className="hidden"
+          <input ref={csvRef} type="file" accept=".csv,.xlsx" className="hidden"
             onChange={e => e.target.files?.[0] && handleCsvUpload(e.target.files[0])} />
         </div>
       </section>
 
-      {/* ── Prezzarios ── */}
+      {/* ── Step 2: Seleziona Prezzari ────────────────────────────────────── */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-sm font-bold tracking-widest text-white/40 uppercase">
-            2 — Prezzarios
-            <span className="text-white/20 font-normal ml-2">(Supabase — compartilhados)</span>
-          </h2>
+        <h2 className="text-sm font-bold tracking-widest text-gray-500 dark:text-white/40 uppercase mb-4">
+          2 — Seleziona Prezzari
+        </h2>
 
-          {/* Upload button — admin only */}
-          {isAdmin && (
-            <button
-              onClick={() => prezRef.current?.click()}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-[#E94560]/20 hover:bg-[#E94560]/40 border border-[#E94560]/30 rounded-xl text-[#E94560] text-sm font-bold transition-colors disabled:opacity-50"
-            >
-              <Plus size={16} />
-              {uploadProgress ?? 'Carregar Prezzario'}
-            </button>
-          )}
-          <input ref={prezRef} type="file" accept=".xlsx,.xls,.csv" className="hidden"
-            onChange={e => e.target.files?.[0] && handlePrezzarioUpload(e.target.files[0])} />
-        </div>
-
-        {/* Upload progress */}
-        {loading && uploadProgress && (
-          <div className="bg-white/5 border border-white/10 rounded-xl px-5 py-3 mb-3 flex items-center gap-3">
-            <div className="w-4 h-4 border-2 border-[#E94560] border-t-transparent rounded-full animate-spin" />
-            <span className="text-white/60 text-sm">{uploadProgress}</span>
-          </div>
-        )}
-
-        {/* Empty state */}
         {prezzarios.length === 0 ? (
-          <div
-            onClick={isAdmin ? () => prezRef.current?.click() : undefined}
-            onDrop={isAdmin ? onDrop('prez') : undefined}
-            onDragOver={isAdmin ? e => e.preventDefault() : undefined}
-            className={`border-2 border-dashed border-white/10 rounded-2xl p-8 flex flex-col items-center gap-3 transition-colors
-              ${isAdmin ? 'hover:border-white/20 cursor-pointer' : 'cursor-default'}`}
-          >
-            <Database size={32} className="text-white/20" />
-            {isAdmin
-              ? <p className="text-white/40 text-sm">Carregue um prezzario DEI ou Sicilia (.xlsx ou .csv)</p>
-              : <p className="text-white/30 text-sm flex items-center gap-2"><Lock size={14} />Nenhum prezzario disponível — aguarde o admin carregar</p>
-            }
+          /* No prezzarios loaded yet — guide user to settings */
+          <div className="border-2 border-dashed border-gray-300 dark:border-white/10 rounded-2xl p-8 flex flex-col items-center gap-4 text-center">
+            <Database size={32} className="text-gray-300 dark:text-white/20" />
+            <div>
+              <p className="text-gray-500 dark:text-white/40 text-sm font-medium">Nessun prezzario disponibile</p>
+              <p className="text-gray-400 dark:text-white/20 text-xs mt-1">
+                {user.role === 'admin' || user.email === 'rafael.azevedo.93@live.com'
+                  ? 'Carica un prezzario DEI o Sicilia nelle Impostazioni.'
+                  : 'Attendi che l\'amministratore carichi il prezzario di sistema.'
+                }
+              </p>
+            </div>
+            {(user.role === 'admin' || user.email === 'rafael.azevedo.93@live.com') && (
+              <button
+                onClick={onGoToSettings}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-white/10 hover:bg-gray-300 dark:bg-white/20 rounded-xl text-sm font-bold transition-colors"
+              >
+                <Settings size={15} />
+                Vai alle Impostazioni
+              </button>
+            )}
           </div>
         ) : (
-          <div className="space-y-2">
-            {prezzarios.map(p => (
-              <div key={p.id} className="bg-white/5 border border-white/10 rounded-xl px-5 py-3 flex items-center justify-between">
-                <div>
-                  <p className="text-white font-medium">{p.nome}</p>
-                  <p className="text-white/40 text-xs">
-                    {p.totalVoci.toLocaleString('it-IT')} voci · importado em {new Date(p.dataImport).toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-                {/* Delete button — admin only */}
-                {isAdmin && (
-                  <button onClick={() => handleDelete(p.id!)} className="p-2 text-white/30 hover:text-red-400 transition-colors">
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Prezzario selectors */}
-        {prezzarios.length > 0 && (
-          <div className="grid grid-cols-2 gap-4 mt-5">
+          <div className="grid grid-cols-2 gap-5">
             {[
-              { label: 'Prezzario de Referência (DEI)', value: refPrezzarioId, set: setRefPrezzarioId },
-              { label: 'Prezzario Target', value: targetPrezzarioId, set: setTargetPrezzarioId },
-            ].map(({ label, value, set }) => (
-              <div key={label}>
-                <label className="block text-xs text-white/40 font-bold tracking-widest uppercase mb-2">{label}</label>
+              {
+                label: 'Prezzario di Riferimento',
+                sublabel: 'DEI — fonte dei prezzi base',
+                value: refPrezzarioId,
+                set: setRefPrezzarioId,
+                color: '#0F3460',
+              },
+              {
+                label: 'Prezzario Target',
+                sublabel: 'Prezzario da confrontare / applicare',
+                value: targetPrezzarioId,
+                set: setTargetPrezzarioId,
+                color: '#E94560',
+              },
+            ].map(({ label, sublabel, value, set, color }) => (
+              <div key={label} className="bg-gray-100 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-2xl p-5 space-y-3">
+                <div>
+                  <label className="block text-xs font-bold tracking-widest uppercase text-gray-500 dark:text-white/50 mb-0.5">
+                    {label}
+                  </label>
+                  <p className="text-gray-400 dark:text-white/25 text-[11px]">{sublabel}</p>
+                </div>
                 <select
                   value={value ?? ''}
                   onChange={e => set(Number(e.target.value))}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-white text-sm"
+                  className="w-full bg-white dark:bg-[#0a0f1a] border border-gray-300 dark:border-white/10 focus:border-gray-400 dark:focus:border-white/30 rounded-xl px-4 py-3 text-gray-900 dark:text-white text-sm outline-none transition-colors"
+                  style={{ borderLeftColor: color, borderLeftWidth: 3 }}
                 >
-                  <option value="">— selecionar —</option>
+                  <option value="">— seleziona —</option>
                   {prezzarios.map(p => (
                     <option key={p.id} value={p.id}>{p.nome}</option>
                   ))}
@@ -252,10 +204,10 @@ export function SetupView({
           className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-sm tracking-widest uppercase transition-all
             ${canProcess
               ? 'bg-gradient-to-r from-[#0F3460] to-[#E94560] text-white shadow-2xl shadow-[#E94560]/20 hover:shadow-[#E94560]/40'
-              : 'bg-white/5 text-white/20 cursor-not-allowed'
+              : 'bg-gray-200 dark:bg-white/5 text-gray-400 dark:text-white/20 cursor-not-allowed'
             }`}
         >
-          PROCESSAR
+          ELABORA
           <ChevronRight size={20} />
         </motion.button>
       </div>

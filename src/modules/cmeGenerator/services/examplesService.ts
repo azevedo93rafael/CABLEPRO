@@ -62,19 +62,30 @@ export async function saveExamplesBatch(
     }
   }
 
+  // ── Deduplicate rows by (codice_dei, codice_target) ───────────────────────
+  // PostgreSQL ON CONFLICT requires that the batch contains no duplicate keys.
+  const uniqueRowsMap = new Map<string, object>();
+  for (const row of rows as any[]) {
+    const key = `${row.codice_dei}_${row.codice_target}`;
+    if (!uniqueRowsMap.has(key)) {
+      uniqueRowsMap.set(key, row);
+    }
+  }
+  const uniqueRows = Array.from(uniqueRowsMap.values());
+
   // Batch upsert — conflict on (codice_dei, codice_target) updates score and valore
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const batch = rows.slice(i, i + BATCH_SIZE);
-    const { error, count } = await supabase
+  for (let i = 0; i < uniqueRows.length; i += BATCH_SIZE) {
+    const batch = uniqueRows.slice(i, i + BATCH_SIZE);
+    const { error, data } = await supabase
       .from('cme_examples')
       .upsert(batch, {
         onConflict: 'codice_dei,codice_target',
         ignoreDuplicates: false,
       })
-      .select('id', { count: 'exact', head: true });
+      .select('id');
 
     if (error) throw new Error(`Erro ao salvar exemplos: ${error.message}`);
-    saved += count ?? batch.length;
+    saved += data?.length ?? batch.length;
   }
 
   return { saved, skipped };

@@ -8,6 +8,9 @@
 //
 // Large prezzarios (up to 30k voci) are bulk-inserted in batches of 500
 // to avoid timeouts and stay within Supabase's request size limits.
+//
+// NOTE: Uses SheetJS (xlsx) for Excel parsing — 100% browser-native.
+// ExcelJS cannot be used for reading in the browser (Node stream deps).
 // ─────────────────────────────────────────────────────────────────────────────
 import { supabase } from '../../../lib/supabase';
 import type { PrezzarioRecord, PrezzarioVoce } from '../types';
@@ -15,8 +18,8 @@ import type { PrezzarioRecord, PrezzarioVoce } from '../types';
 const BATCH_SIZE = 500;
 
 // ── Column aliases for prezzario Excel/CSV parsing ────────────────────────────
-// TARIFFA is the primary match key — it’s what the Revit CSV references.
-// We check for it FIRST before generic ‘codice’ names.
+// TARIFFA is the primary match key — it's what the Revit CSV references.
+// We check for it FIRST before generic 'codice' names.
 const TARIFFA_ALIASES   = ['tariffa', 'tariff', 'cod_tariffa', 'codicetariffa'];
 const CODICE_ALIASES    = ['codice', 'cod', 'code', 'articolo', 'cod_voce', 'id_voce', 'voce_id'];
 const DESC_ALIASES      = ['descrizione', 'descrizione_dell', 'descrip', 'description', 'desc', 'voce', 'lavoro', 'lavorazione'];
@@ -45,7 +48,8 @@ function findCodiceCol(headers: string[]): string | undefined {
   return findCol(headers, TARIFFA_ALIASES) ?? findCol(headers, CODICE_ALIASES);
 }
 
-// ── Parse an uploaded Excel (.xlsx) or CSV file into PrezzarioVoce[] ─────────
+// ── Parse an uploaded Excel (.xlsx/.xls) or CSV file into PrezzarioVoce[] ────
+// Uses SheetJS (xlsx) — 100% browser-native, no Node.js stream dependencies.
 export async function parsePrezzarioFile(file: File): Promise<PrezzarioVoce[]> {
   const buffer = await file.arrayBuffer();
 
@@ -53,17 +57,19 @@ export async function parsePrezzarioFile(file: File): Promise<PrezzarioVoce[]> {
     return parseCsvText(new TextDecoder().decode(buffer));
   }
 
-  // Dynamic import: load ExcelJS only when user actually uploads
-  const { default: ExcelJS } = await import('exceljs');
-  const wb = new ExcelJS.Workbook();
-  await wb.xlsx.load(buffer);
+  // SheetJS: works natively in the browser
+  const XLSX = await import('xlsx');
+  const wb = XLSX.read(buffer, { type: 'array' });
 
-  const ws = wb.worksheets[0];
-  if (!ws) throw new Error('Nenhuma planilha encontrada no arquivo.');
+  const wsName = wb.SheetNames[0];
+  if (!wsName) throw new Error('Nenhuma planilha encontrada no arquivo.');
+  const ws = wb.Sheets[wsName];
 
-  const firstRow = ws.getRow(1);
-  const headers: string[] = [];
-  firstRow.eachCell({ includeEmpty: true }, cell => headers.push(String(cell.value ?? '')));
+  // Convert sheet to array of arrays (raw values)
+  const rows: any[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  if (rows.length < 2) throw new Error('O arquivo não contém dados suficientes.');
+
+  const headers = (rows[0] as any[]).map(h => String(h ?? ''));
 
   // TARIFFA is the primary codice — stored as `codice` in our DB for uniform lookup
   const colCodice    = findCodiceCol(headers);
@@ -79,22 +85,26 @@ export async function parsePrezzarioFile(file: File): Promise<PrezzarioVoce[]> {
     );
   }
 
-  const idxOf = (name: string) => headers.indexOf(name) + 1;
+  const idxOf = (name: string) => headers.indexOf(name);
   const voci: PrezzarioVoce[] = [];
 
-  ws.eachRow({ includeEmpty: false }, (row, rowNum) => {
-    if (rowNum === 1) return;
-    const codice = String(row.getCell(idxOf(colCodice)).value ?? '').trim();
-    if (!codice) return;
+  for (let rowIdx = 1; rowIdx < rows.length; rowIdx++) {
+    const row = rows[rowIdx] as any[];
+    if (!row || row.every(c => c === '' || c == null)) continue;
+
+    const codice = String(row[idxOf(colCodice)] ?? '').trim();
+    if (!codice) continue;
+
     voci.push({
       prezzarioId: 0,
       codice,
-      descrizione: String(row.getCell(idxOf(colDesc)).value ?? '').trim(),
-      valore: parseFloat(String(row.getCell(idxOf(colValore)).value ?? '0').replace(',', '.')) || 0,
-      um:       colUm        ? String(row.getCell(idxOf(colUm)).value ?? 'cad').trim()   : 'cad',
-      categoria: colCategoria ? String(row.getCell(idxOf(colCategoria)).value ?? '').trim() : '',
+      descrizione: String(row[idxOf(colDesc)] ?? '').trim(),
+      valore: parseFloat(String(row[idxOf(colValore)] ?? '0').replace(',', '.')) || 0,
+      um:       colUm        ? String(row[idxOf(colUm)]        ?? 'cad').trim() : 'cad',
+      categoria: colCategoria ? String(row[idxOf(colCategoria)] ?? '').trim()  : '',
     });
-  });
+  }
+
   return voci;
 }
 
@@ -102,7 +112,7 @@ function parseCsvText(text: string): PrezzarioVoce[] {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   if (lines.length < 2) return [];
   const sep = lines[0].includes(';') ? ';' : ',';
-  const headers = lines[0].split(sep).map(h => h.trim().replace(/^["']|["']$/g, ''));
+  const headers = lines[0].split(sep).map(h => h.trim().replace(/^[\"']|[\"']$/g, ''));
 
   // TARIFFA takes priority as primary codice — same logic as the XLSX path
   const colCodice    = findCodiceCol(headers) ?? headers[0];
@@ -113,7 +123,7 @@ function parseCsvText(text: string): PrezzarioVoce[] {
   const idx = (n: string | undefined) => n ? headers.indexOf(n) : -1;
 
   return lines.slice(1).map(line => {
-    const cells = line.split(sep).map(c => c.trim().replace(/^["']|["']$/g, ''));
+    const cells = line.split(sep).map(c => c.trim().replace(/^[\"']|[\"']$/g, ''));
     return {
       prezzarioId: 0,
       codice:      cells[idx(colCodice)]   ?? '',

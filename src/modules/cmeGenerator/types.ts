@@ -3,7 +3,7 @@
 // Domain types for the CME Generator module
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type StatusItem = 'OK' | 'ALERT' | 'NAO_ENCONTRADO';
+export type StatusItem = 'OK' | 'ALERT' | 'NAO_ENCONTRADO' | 'NVP';
 
 // ── Raw Revit CSV row (WBS schema) ───────────────────────────────────────────
 export interface Elemento {
@@ -16,6 +16,13 @@ export interface Elemento {
   quantita:   number;   // Count × fatorWBS — final quantity for the computo line
   fatorWBS:   number;   // WBSt_2 or WBSt_4 — multiplier applied to Count
   countRevit: number;   // Count — raw Revit quantity before factor
+  /** Optional: 'PREZZARIO' | 'NVP' — read from TipoPrezzo column if present in CSV */
+  tipoPrezzo?: 'PREZZARIO' | 'NVP' | string;
+  bimStatus?: 'BIM ON' | 'BIM OFF';
+  tariffa2?:   string;   // WBSt_3 — secondary composition prezzario key
+  fatorWBS2?:  number;   // WBSt_4 — secondary composition multiplier
+  unidade?:    string;   // Product unit exported in the Revit CSV
+  tipoImpianto?: string; // TIPO DI IMPIANTI column value
 }
 
 // ── Processed result ──────────────────────────────────────────────────────────
@@ -28,6 +35,7 @@ export interface SubItem {
   quantitaComposizione: number;
   valoreUnitario: number;
   status: StatusItem;
+  unidade?: string;
 }
 
 export interface ResultadoItem {
@@ -37,7 +45,7 @@ export interface ResultadoItem {
   zona: string;
   categoria: string;
   descrizioneElemento: string;
-  tipoPrezzo: TipoPrezzo;
+  tipoPrezzo: string;
   quantitaElemento: number;
   unidade: string;
   valoreUnitario: number;
@@ -46,6 +54,10 @@ export interface ResultadoItem {
   status: StatusItem;
   subItems: SubItem[];
   notes?: string;
+  bimStatus?: 'BIM ON' | 'BIM OFF';
+  tariffaOriginal?: string;
+  nvpDetails?: any;
+  tipoImpianto?: string;
 }
 
 // ── Prezzario (price list) ────────────────────────────────────────────────────
@@ -67,6 +79,13 @@ export interface PrezzarioRecord {
 }
 
 // ── In-memory module state ────────────────────────────────────────────────────
+export type CmeAction =
+  | { type: 'ADD_CHAT_MSG'; payload: { id: string; msg: ChatMessage } }
+  | { type: 'SET_RAW_BIM_OFF_DATA'; payload: any[][] | undefined }
+  | { type: 'SET_PROJECT_ID'; payload: { id: string; name: string } | null }
+  | { type: 'LOAD_PROJECT'; payload: any }
+  | { type: 'RESET' };
+
 export interface CmeState {
   elementos: Elemento[];
   resultados: Map<string, ResultadoItem>;
@@ -74,6 +93,9 @@ export interface CmeState {
   chatHistory: Map<string, ChatMessage[]>;
   isProcessing: boolean;
   progress: { current: number; total: number; message: string };
+  rawBimOffData?: any[][];
+  projectId?: string | null;
+  projectName?: string | null;
 }
 
 export interface ChatMessage {

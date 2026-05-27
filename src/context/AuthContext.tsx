@@ -9,6 +9,18 @@ export type UserProfile = {
   accessible_modules?: string[];
 };
 
+const ALL_MODULES = ['cablefill', 'capitolato', 'cabine-mt', 'project-management', 'cme-generator'];
+const ADMIN_EMAIL = 'rafael.azevedo.93@live.com';
+
+/** Patch a parsed user profile: if it's the admin, always give all modules */
+function patchAdminModules(parsed: any): any {
+  if (parsed?.email === ADMIN_EMAIL) {
+    parsed.role = 'admin';
+    parsed.accessible_modules = ALL_MODULES;
+  }
+  return parsed;
+}
+
 interface AuthContextType {
   user: UserProfile | null;
   setUser: React.Dispatch<React.SetStateAction<UserProfile | null>>;
@@ -23,11 +35,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const saved = localStorage.getItem('cablefill_user');
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
+        let parsed = JSON.parse(saved);
         if (parsed.username && !parsed.email) {
           parsed.email = parsed.username;
         }
         if (parsed.email) {
+          // ── Immediately patch admin modules from stale cache ──
+          parsed = patchAdminModules(parsed);
+          localStorage.setItem('cablefill_user', JSON.stringify(parsed));
           return parsed;
         }
       } catch (e) {
@@ -39,7 +54,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isSessionVerified, setIsSessionVerified] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error) {
         if (error.message?.includes('Refresh Token Not Found') || error.message?.includes('invalid_grant')) {
           supabase.auth.signOut().catch(() => {});
@@ -48,40 +63,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         setUser(null);
         localStorage.removeItem('cablefill_user');
-      } else if (session?.user) {
-        supabase.from('User').select('*').eq('id', session.user.id).single().then(({ data: profile }) => {
+        setIsSessionVerified(true);
+        return;
+      }
+
+      if (session?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('User')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
           if (profile) {
-            if (profile.email === 'rafael.azevedo.93@live.com' && !profile.name) {
-              supabase.from('User').update({ name: 'Rafael Azevedo', full_name: 'Rafael Azevedo' }).eq('id', profile.id).then(({ error: updateError }) => {
-                if (!updateError) {
-                  const updatedUser = { 
-                    id: profile.id, 
-                    email: profile.email, 
-                    name: 'Rafael Azevedo',
-                    role: 'admin',
-                    accessible_modules: profile.accessible_modules || ['cablefill', 'capitolato']
-                  };
-                  setUser(updatedUser);
-                  localStorage.setItem('cablefill_user', JSON.stringify(updatedUser));
-                } else {
-                  console.error('Failed to auto-update master admin name:', updateError);
-                  supabase.from('User').update({ name: 'Rafael Azevedo' }).eq('id', profile.id);
-                }
-              });
-            } else if (profile.is_approved === 1 || profile.email === 'rafael.azevedo.93@live.com') {
-              const loggedUser = { 
-                id: profile.id, 
-                email: profile.email, 
-                name: profile.name || profile.full_name || profile.nome || profile.display_name || profile.username || session.user.user_metadata?.name || session.user.user_metadata?.full_name,
-                role: profile.email === 'rafael.azevedo.93@live.com' ? 'admin' : profile.role,
-                accessible_modules: profile.accessible_modules || ['cablefill', 'capitolato']
+            const isAdmin = profile.email === ADMIN_EMAIL;
+
+            // Auto-name patch for admin if name is missing
+            if (isAdmin && !profile.name) {
+              supabase.from('User')
+                .update({ name: 'Rafael Azevedo', full_name: 'Rafael Azevedo' })
+                .eq('id', profile.id)
+                .then(({ error: e }) => { if (e) console.error('Name patch failed:', e); });
+            }
+
+            if (isAdmin || profile.is_approved === 1) {
+              const loggedUser: UserProfile = {
+                id:                 profile.id,
+                email:              profile.email,
+                name:               isAdmin && !profile.name
+                                      ? 'Rafael Azevedo'
+                                      : (profile.name || profile.full_name || profile.nome ||
+                                         profile.display_name || profile.username ||
+                                         session.user.user_metadata?.name ||
+                                         session.user.user_metadata?.full_name),
+                role:               isAdmin ? 'admin' : profile.role,
+                accessible_modules: isAdmin
+                                      ? ALL_MODULES
+                                      : (profile.accessible_modules || ['cablefill', 'capitolato']),
               };
               setUser(loggedUser);
               localStorage.setItem('cablefill_user', JSON.stringify(loggedUser));
             }
           }
-        });
+        } catch (fetchErr) {
+          console.error('Profile fetch error:', fetchErr);
+        }
       }
+
       setIsSessionVerified(true);
     }).catch((err) => {
       console.error('Auth catch error:', err);

@@ -75,13 +75,13 @@ function AlertCard({
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <p className="text-white font-medium text-sm truncate">{item.descrizioneElemento}</p>
-          <p className="text-white/40 text-xs mt-0.5">
+          <p className="text-gray-900 dark:text-white font-medium text-sm truncate">{item.descrizioneElemento}</p>
+          <p className="text-gray-500 dark:text-white/40 text-xs mt-0.5">
             {item.edificio} · {item.livello} · {item.categoria}
           </p>
           {item.subItems.length > 0 && (
-            <p className="text-white/30 text-xs mt-1">
-              Match: <span className="text-white/50">{item.subItems[0]?.codicePrezzarioTarget}</span>
+            <p className="text-gray-400 dark:text-white/30 text-xs mt-1">
+              Match: <span className="text-gray-500 dark:text-white/50">{item.subItems[0]?.codicePrezzarioTarget}</span>
               {' '}— confiança: <span className={item.subItems[0]?.confiancaMatch >= 0.7 ? 'text-yellow-400' : 'text-red-400'}>
                 {((item.subItems[0]?.confiancaMatch ?? 0) * 100).toFixed(0)}%
               </span>
@@ -97,7 +97,7 @@ function AlertCard({
                 type="number"
                 value={valoreInput}
                 onChange={e => setValoreInput(e.target.value)}
-                className="w-24 bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-white text-sm text-right"
+                className="w-24 bg-gray-200 dark:bg-white/10 border border-gray-300 dark:border-white/20 rounded-lg px-2 py-1 text-gray-900 dark:text-white text-sm text-right"
                 autoFocus
               />
               <button
@@ -113,8 +113,8 @@ function AlertCard({
             </div>
           ) : (
             <div>
-              <p className="text-white font-bold">€{(item.correctedValore ?? item.valoreUnitario).toFixed(2)}</p>
-              <p className="text-white/30 text-xs">{item.quantitaElemento} {item.unidade}</p>
+              <p className="text-gray-900 dark:text-white font-bold">€{(item.correctedValore ?? item.valoreUnitario).toFixed(2)}</p>
+              <p className="text-gray-400 dark:text-white/30 text-xs">{item.quantitaElemento} {item.unidade}</p>
             </div>
           )}
         </div>
@@ -125,15 +125,15 @@ function AlertCard({
         <div className="flex gap-2 mt-3">
           <button
             onClick={onApprove}
-            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-400 text-xs font-bold transition-colors"
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-green-500/10 hover:bg-green-500/20 border border-green-500/20 text-green-500 dark:text-green-400 text-xs font-bold transition-colors"
           >
-            <ThumbsUp size={12} /> Aprovar
+            <ThumbsUp size={12} /> Approva
           </button>
           <button
             onClick={() => setEditing(true)}
             className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 text-blue-400 text-xs font-bold transition-colors"
           >
-            <Edit3 size={12} /> Corrigir
+            <Edit3 size={12} /> Correggi
           </button>
           <button
             onClick={onReject}
@@ -150,12 +150,12 @@ function AlertCard({
             item.reviewStatus === 'approved' ? 'text-green-400' :
             item.reviewStatus === 'corrected' ? 'text-blue-400' : 'text-red-400'
           }`}>
-            {item.reviewStatus === 'approved' ? '✓ Aprovado' :
-             item.reviewStatus === 'corrected' ? '✎ Corrigido' : '✗ Rejeitado'}
+            {item.reviewStatus === 'approved' ? '✓ Approvato' :
+             item.reviewStatus === 'corrected' ? '✎ Corretto' : '✗ Rifiutato'}
           </span>
           <button onClick={() => {
             /* reset to pending */
-          }} className="text-white/20 hover:text-white/40 text-xs ml-auto">desfazer</button>
+          }} className="text-gray-500 hover:text-gray-700 dark:text-white/20 dark:hover:text-white/40 text-xs ml-auto">annulla</button>
         </div>
       )}
     </motion.div>
@@ -223,22 +223,22 @@ export function ReviewView({ user, onFinish, onSkip }: ReviewViewProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* ── Top bar ── */}
-      <div className="px-8 py-5 border-b border-white/5 bg-[#080C14]">
+      <div className="px-8 py-5 border-b border-gray-200 dark:border-white/5 bg-white dark:bg-[#080C14]">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-white font-black text-lg tracking-tight">Revisão do Job</h2>
-            <p className="text-white/40 text-xs mt-0.5">
+            <h2 className="text-gray-900 dark:text-white font-black text-lg tracking-tight">Revisione del Job</h2>
+            <p className="text-gray-500 dark:text-white/40 text-xs mt-0.5">
               {pendingCount > 0
-                ? `${pendingCount} itens aguardando revisão`
-                : '✓ Todos os itens revisados'}
+                ? `${pendingCount} elementi in attesa di revisione`
+                : '✓ Tutti gli elementi revisionati'}
             </p>
           </div>
           <div className="flex gap-3">
             <button
               onClick={onSkip}
-              className="px-4 py-2 rounded-xl border border-white/10 text-white/40 hover:text-white/60 text-sm transition-colors"
+              className="px-4 py-2 rounded-xl border border-gray-300 dark:border-white/10 text-gray-500 dark:text-white/40 hover:text-gray-600 dark:text-white/60 text-sm transition-colors"
             >
-              Pular revisão
+              Salta revisione
             </button>
             <button
               onClick={handleSave}
@@ -246,10 +246,10 @@ export function ReviewView({ user, onFinish, onSkip }: ReviewViewProps) {
               className="flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-[#0F3460] to-[#E94560] text-white font-bold text-sm transition-all disabled:opacity-50"
             >
               {saving
-                ? <><Loader2 size={14} className="animate-spin" /> Salvando...</>
+                ? <><Loader2 size={14} className="animate-spin" /> Salvataggio...</>
                 : savedCount !== null
-                ? <><CheckCircle2 size={14} className="text-green-400" /> {savedCount} exemplos salvos!</>
-                : <><Database size={14} /> Finalizar e Salvar Exemplos</>
+                ? <><CheckCircle2 size={14} className="text-green-400" /> {savedCount} esempi salvati!</>
+                : <><Database size={14} /> Finalizza e Salva Esempi</>
               }
             </button>
           </div>
@@ -257,7 +257,7 @@ export function ReviewView({ user, onFinish, onSkip }: ReviewViewProps) {
 
         {/* Stats row */}
         <div className="flex gap-3 mt-4">
-          <StatBadge label="Total"     value={stats.total}         color="border-white/10 text-white/60" />
+          <StatBadge label="Total"     value={stats.total}         color="border-gray-300 dark:border-white/10 text-gray-600 dark:text-white/60" />
           <StatBadge label="OK"        value={stats.ok}            color="border-green-500/20 text-green-400" />
           <StatBadge label="Alert"     value={stats.alert}         color="border-yellow-500/20 text-yellow-400" />
           <StatBadge label="Não enc."  value={stats.naoEncontrado} color="border-red-500/20 text-red-400" />
@@ -273,7 +273,7 @@ export function ReviewView({ user, onFinish, onSkip }: ReviewViewProps) {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex items-center gap-1 px-8 py-3 border-b border-white/5 bg-[#060A12]">
+      <div className="flex items-center gap-1 px-8 py-3 border-b border-gray-200 dark:border-white/5 bg-gray-50 dark:bg-[#060A12]">
         {([
           { id: 'ok',    label: `✓ OK (${stats.ok})`,               color: 'text-green-400' },
           { id: 'alert', label: `⚠ Alert (${stats.alert})`,         color: 'text-yellow-400' },
@@ -284,8 +284,8 @@ export function ReviewView({ user, onFinish, onSkip }: ReviewViewProps) {
             onClick={() => setTab(t.id)}
             className={`px-4 py-2 rounded-lg text-xs font-bold tracking-widest uppercase transition-all
               ${tab === t.id
-                ? `bg-white/10 ${t.color}`
-                : 'text-white/30 hover:text-white/50'}`}
+                ? `bg-gray-200 dark:bg-white/10 ${t.color}`
+                : 'text-gray-400 dark:text-white/30 hover:text-gray-500 dark:text-white/50'}`}
           >
             {t.label}
           </button>
@@ -297,18 +297,18 @@ export function ReviewView({ user, onFinish, onSkip }: ReviewViewProps) {
         <input
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          placeholder="Filtrar..."
-          className="bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-white/60 text-xs w-48 placeholder-white/20 focus:outline-none focus:border-white/20"
+          placeholder="Filtra..."
+          className="bg-gray-100 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-lg px-3 py-1.5 text-gray-600 dark:text-white/60 text-xs w-48 placeholder-gray-400 dark:placeholder-white/20 focus:outline-none focus:border-gray-300 dark:border-white/20"
         />
 
         {/* Bulk approve OK */}
         {tab === 'ok' && (
           <button
             onClick={approveAllOk}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-400 text-xs font-bold transition-colors ml-2"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/15 hover:bg-green-500/25 border border-green-500/30 text-green-600 dark:text-green-400 text-xs font-bold transition-colors ml-2"
           >
             <CheckCircle2 size={13} />
-            Aprovar Todos OK ({stats.ok.toLocaleString('it-IT')})
+            Approva Tutti OK ({stats.ok.toLocaleString('it-IT')})
           </button>
         )}
       </div>
@@ -318,24 +318,24 @@ export function ReviewView({ user, onFinish, onSkip }: ReviewViewProps) {
         {tab === 'ok' && (
           <div className="space-y-0 divide-y divide-white/5">
             {tabItems.slice(0, 200).map(item => (
-              <div key={item.idElemento} className="py-3 flex items-center justify-between">
+              <div key={item.idElemento} className="py-3 flex items-center justify-between border-b border-gray-200 dark:border-white/5 last:border-0">
                 <div className="flex-1 min-w-0">
-                  <p className="text-white/80 text-sm truncate">{item.descrizioneElemento}</p>
-                  <p className="text-white/30 text-xs">{item.edificio} · {item.livello} · {item.categoria}</p>
+                  <p className="text-gray-900 dark:text-white/80 text-sm truncate font-medium">{item.descrizioneElemento}</p>
+                  <p className="text-gray-500 dark:text-white/40 text-xs">{item.edificio} · {item.livello} · {item.categoria}</p>
                 </div>
                 <div className="flex items-center gap-4 flex-shrink-0">
-                  <span className="text-white/50 text-sm">€{item.valoreUnitario.toFixed(2)}</span>
+                  <span className="text-gray-500 dark:text-white/50 text-sm">€{item.valoreUnitario.toFixed(2)}</span>
                   {item.reviewStatus === 'approved'
                     ? <CheckCircle2 size={16} className="text-green-400" />
-                    : <div className="w-4 h-4 rounded-full border border-white/20" />
+                    : <div className="w-4 h-4 rounded-full border border-gray-300 dark:border-white/20" />
                   }
                 </div>
               </div>
             ))}
             {tabItems.length > 200 && (
-              <p className="text-white/20 text-xs py-4 text-center">
-                + {(tabItems.length - 200).toLocaleString('it-IT')} itens adicionais —
-                use "Aprovar Todos OK" para aprovar em bloco
+              <p className="text-gray-500 dark:text-white/30 text-xs py-4 text-center">
+                + {(tabItems.length - 200).toLocaleString('it-IT')} elementi aggiuntivi —
+                usa "Approva Tutti OK" per approvare in blocco
               </p>
             )}
           </div>
@@ -356,9 +356,9 @@ export function ReviewView({ user, onFinish, onSkip }: ReviewViewProps) {
             </AnimatePresence>
 
             {tabItems.length === 0 && (
-              <div className="flex flex-col items-center py-16 text-white/20">
+              <div className="flex flex-col items-center py-16 text-gray-400 dark:text-white/20">
                 <BarChart2 size={40} className="mb-3" />
-                <p>Nenhum item nesta categoria</p>
+                <p>Nessun elemento in questa categoria</p>
               </div>
             )}
           </div>

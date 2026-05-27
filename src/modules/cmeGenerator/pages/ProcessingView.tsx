@@ -2,10 +2,11 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, AlertTriangle, XCircle, Loader2 } from 'lucide-react';
-import { processElemento, buildNvpResult } from '../services/claudeService';
+import { buildNvpResult } from '../services/claudeService';
 import { loadVoci } from '../services/prezzarioService';
 import { useCme } from '../context/CmeContext';
-import type { Elemento, PrezzarioVoce } from '../types';
+import { NvpBuilderModal } from '../components/NvpBuilderModal';
+import type { Elemento, PrezzarioVoce, ResultadoItem } from '../types';
 
 interface ProcessingViewProps {
   refPrezzarioId: number;
@@ -17,7 +18,7 @@ interface ProcessingViewProps {
 
 interface NvpModalState {
   elemento: Elemento;
-  resolve: (value: { valoreUnitario: number; originePrezzo: string }) => void;
+  resolve: (value: { valoreUnitario: number; originePrezzo: string; nvpDetails: any }) => void;
 }
 
 export function ProcessingView({
@@ -30,15 +31,13 @@ export function ProcessingView({
   const { state, dispatch } = useCme();
   const [log, setLog] = useState<Array<{ text: string; type: 'ok' | 'alert' | 'err' | 'info' }>>([]);
   const [nvpModal, setNvpModal] = useState<NvpModalState | null>(null);
-  const [nvpValue, setNvpValue] = useState('');
-  const [nvpFonte, setNvpFonte] = useState('');
   const logRef = useRef<HTMLDivElement>(null);
   const runRef = useRef(false);
 
   const addLog = (text: string, type: 'ok' | 'alert' | 'err' | 'info' = 'info') =>
     setLog(prev => [...prev.slice(-200), { text, type }]);
 
-  async function askNvp(elemento: Elemento): Promise<{ valoreUnitario: number; originePrezzo: string }> {
+  async function askNvp(elemento: Elemento): Promise<{ valoreUnitario: number; originePrezzo: string; nvpDetails: any }> {
     return new Promise(resolve => setNvpModal({ elemento, resolve }));
   }
 
@@ -48,41 +47,223 @@ export function ProcessingView({
 
     (async () => {
       dispatch({ type: 'SET_PROCESSING', payload: true });
-      addLog('Carregando prezzario do IndexedDB...', 'info');
+      addLog('Carregando prezzario do Supabase...', 'info');
 
+      // Load target prezzario voci
       const targetVoci: PrezzarioVoce[] = await loadVoci(targetPrezzarioId);
-      addLog(`✓ ${targetVoci.length} voci carregadas`, 'ok');
+      addLog(`✓ ${targetVoci.length} voci carregadas no prezzario target`, 'ok');
 
-      const prezzario = state.elementos.filter(e => e.tipoPrezzo === 'PREZZARIO');
-      const nvpItems  = state.elementos.filter(e => e.tipoPrezzo === 'NVP');
-
-      for (let i = 0; i < prezzario.length; i++) {
-        const el = prezzario[i];
-        dispatch({ type: 'SET_PROGRESS', payload: {
-          current: i + 1,
-          total: state.elementos.length,
-          message: `${el.descrizione.slice(0, 50)}...`,
-        }});
-        addLog(`[${i + 1}/${prezzario.length}] ${el.descrizione.slice(0, 60)}`, 'info');
-
-        const result = await processElemento(el, targetVoci, refPrezzarioName, targetPrezzarioName);
-        dispatch({ type: 'ADD_RESULTADO', payload: result });
-
-        const logType = result.status === 'OK' ? 'ok' : result.status === 'ALERT' ? 'alert' : 'err';
-        addLog(`  → ${result.status} | €${result.total.toFixed(2)}`, logType);
+      if (targetVoci.length === 0) {
+        addLog('⚠ Prezzario target vazio — verifique as Configurações.', 'err');
+        dispatch({ type: 'SET_PROCESSING', payload: false });
+        return;
       }
 
+      // Classify elementos:
+      // - If CSV has TipoPrezzo column → use it explicitly ('NVP' or 'PREZZARIO')
+      // - If not → detect NVP by checking if tariffa is blank or starts with 'nvp'
+      const hasTipoCol = state.elementos.some(e => e.tipoPrezzo !== undefined);
+      const NVP_MARKERS = new Set(['nvp', 'nenhum', 'none', 'n/a', '-', '']);
+
+      const toProcess: Elemento[] = [];
+      const nvpItems: Elemento[]  = [];
+
+      for (const el of state.elementos) {
+        const isNvp = hasTipoCol
+          ? el.tipoPrezzo?.toUpperCase() === 'NVP'
+          : NVP_MARKERS.has(el.tariffa.toLowerCase().trim()) || el.tariffa.toLowerCase().startsWith('nvp');
+
+        if (isNvp) nvpItems.push(el);
+        else toProcess.push(el);
+      }
+
+      addLog(
+        `${state.elementos.length} elementos: ${toProcess.length} a processar, ${nvpItems.length} NVP.`,
+        'info'
+      );
+
+      // ── Process normal elementos — exact code lookup (no AI) ──────────────
+      //
+      // Logic: for each elemento, look up elemento.tariffa EXACTLY in
+      // the target prezzario voci (case-insensitive). No fuzzy, no AI.
+      // Found → OK, valore from prezzario. Not found → NAO_ENCONTRADO.
+      //
+      const processedResults: ResultadoItem[] = [];
+
+      for (let i = 0; i < toProcess.length; i++) {
+        const el = toProcess[i];
+
+        dispatch({
+          type: 'SET_PROGRESS',
+          payload: {
+            current: i + 1,
+            total: state.elementos.length,
+            message: `${el.descricao.slice(0, 40)}...`,
+          },
+        });
+
+        const tariffaKey1 = (el.tariffa || '').trim().toLowerCase();
+        const tariffaKey2 = (el.tariffa2 || '').trim().toLowerCase();
+
+        const voce1 = targetVoci.find(v => v.codice.trim().toLowerCase() === tariffaKey1);
+        const voce2 = el.tariffa2 ? targetVoci.find(v => v.codice.trim().toLowerCase() === tariffaKey2) : undefined;
+
+        let result: ResultadoItem;
+
+        if (el.tariffa2) {
+          // Composite element (composition with multiple items, e.g. Torretta)
+          if (voce1 && voce2) {
+            const val1 = voce1.valore;
+            const val2 = voce2.valore;
+            const factor1 = el.fatorWBS || 1;
+            const factor2 = el.fatorWBS2 || 1;
+
+            const compositeValoreUnitario = (val1 * factor1) + (val2 * factor2);
+            const total = parseFloat((compositeValoreUnitario * el.countRevit).toFixed(2));
+
+            result = {
+              idElemento:          el.idUnico,
+              edificio:            el.edificio,
+              livello:             el.livello,
+              zona:                el.zona,
+              categoria:           voce1.categoria || voce2.categoria || 'Geral',
+              descrizioneElemento: el.descricao,
+              tipoPrezzo:          'misura',
+              quantitaElemento:    el.countRevit, // The count of Torrettas (e.g., 5)
+              unidade:             el.unidade || '', // Revit unit
+              valoreUnitario:      compositeValoreUnitario, // PU considering composition
+              total,
+              originePrezzo:       targetPrezzarioName,
+              status:              'OK',
+              subItems: [
+                {
+                  codiceDeiOriginal:          el.tariffa,
+                  descrizioneDei:             el.descricao,
+                  codicePrezzarioTarget:      voce1.codice,
+                  descrizionePrezzarioTarget: voce1.descrizione,
+                  confiancaMatch:             1.0,
+                  quantitaComposizione:       factor1, // composition factor
+                  valoreUnitario:             val1,
+                  status:                     'OK',
+                  unidade:                    voce1.um || 'cad',
+                },
+                {
+                  codiceDeiOriginal:          el.tariffa2,
+                  descrizioneDei:             el.descricao,
+                  codicePrezzarioTarget:      voce2.codice,
+                  descrizionePrezzarioTarget: voce2.descrizione,
+                  confiancaMatch:             1.0,
+                  quantitaComposizione:       factor2,
+                  valoreUnitario:             val2,
+                  status:                     'OK',
+                  unidade:                    voce2.um || 'cad',
+                }
+              ],
+              tipoImpianto:        el.tipoImpianto,
+            };
+            addLog(`✓ ${el.descricao.slice(0, 30)} [COMPOSITA] → €${compositeValoreUnitario.toFixed(2)} × ${el.countRevit} = €${total.toFixed(2)}`, 'ok');
+          } else {
+            const missingCodes = [];
+            if (!voce1) missingCodes.push(el.tariffa);
+            if (!voce2) missingCodes.push(el.tariffa2);
+
+            result = {
+              idElemento:          el.idUnico,
+              edificio:            el.edificio,
+              livello:             el.livello,
+              zona:                el.zona,
+              categoria:           'Não encontrado',
+              descrizioneElemento: el.descricao,
+              tipoPrezzo:          'misura',
+              quantitaElemento:    el.countRevit,
+              unidade:             el.unidade || '',
+              valoreUnitario:      0,
+              total:               0,
+              originePrezzo:       'NAO_ENCONTRADO',
+              status:              'NAO_ENCONTRADO',
+              subItems: [],
+              notes:               `Tariffas composição "${missingCodes.join(', ')}" não encontradas no prezzario.`,
+              tipoImpianto:        el.tipoImpianto,
+            };
+            addLog(`✗ ${el.descricao.slice(0, 30)} [COMPOSITA] — CODES "${missingCodes.join(', ')}" NÃO ENCONTRADOS`, 'err');
+          }
+        } else {
+          // Flat single-item element
+          if (voce1) {
+            const factor = el.fatorWBS || 1;
+            const singleValoreUnitario = voce1.valore * factor;
+            const total = parseFloat((singleValoreUnitario * el.countRevit).toFixed(2));
+
+            result = {
+              idElemento:          el.idUnico,
+              edificio:            el.edificio,
+              livello:             el.livello,
+              zona:                el.zona,
+              categoria:           voce1.categoria || 'Geral',
+              descrizioneElemento: el.descricao,
+              tipoPrezzo:          'misura',
+              quantitaElemento:    el.countRevit, // Revit Count
+              unidade:             el.unidade || '', // Revit unit exclusively
+              valoreUnitario:      singleValoreUnitario, // PU considering factor
+              total,
+              originePrezzo:       targetPrezzarioName,
+              status:              'OK',
+              subItems: [{
+                codiceDeiOriginal:          el.tariffa,
+                descrizioneDei:             el.descricao,
+                codicePrezzarioTarget:      voce1.codice,
+                descrizionePrezzarioTarget: voce1.descrizione,
+                confiancaMatch:             1.0,
+                quantitaComposizione:       factor, // composition factor
+                valoreUnitario:             voce1.valore,
+                status:                     'OK',
+                unidade:                    voce1.um || 'cad',
+              }],
+              tipoImpianto:        el.tipoImpianto,
+            };
+            addLog(`✓ ${el.descricao.slice(0, 35)} [${el.tariffa}] → €${singleValoreUnitario.toFixed(2)} × ${el.countRevit} = €${total.toFixed(2)}`, 'ok');
+          } else {
+            result = {
+              idElemento:          el.idUnico,
+              edificio:            el.edificio,
+              livello:             el.livello,
+              zona:                el.zona,
+              categoria:           'Não encontrado',
+              descrizioneElemento: el.descricao,
+              tipoPrezzo:          'misura',
+              quantitaElemento:    el.countRevit,
+              unidade:             el.unidade || '',
+              valoreUnitario:      0,
+              total:               0,
+              originePrezzo:       'NAO_ENCONTRADO',
+              status:              'NAO_ENCONTRADO',
+              subItems: [],
+              notes:               `Tariffa "${el.tariffa}" não encontrada no prezzario.`,
+              tipoImpianto:        el.tipoImpianto,
+            };
+            addLog(`✗ ${el.descricao.slice(0, 35)} [${el.tariffa}] — NÃO ENCONTRADO`, 'err');
+          }
+        }
+
+        processedResults.push(result);
+        dispatch({ type: 'ADD_RESULTADO', payload: result });
+      }
+
+      // ── Handle NVP items — prompt user for manual price entry ─────────────
       if (nvpItems.length > 0) {
         addLog(`\n${nvpItems.length} itens NVP aguardam entrada manual...`, 'alert');
         for (const el of nvpItems) {
-          const { valoreUnitario, originePrezzo } = await askNvp(el);
-          dispatch({ type: 'ADD_RESULTADO', payload: buildNvpResult(el, valoreUnitario, originePrezzo || 'NVP Manual') });
-          addLog(`✓ NVP: ${el.descrizione.slice(0, 40)} → €${valoreUnitario}/ud`, 'ok');
+          const { valoreUnitario, originePrezzo, nvpDetails } = await askNvp(el);
+          const nvpResult = buildNvpResult(el, valoreUnitario, originePrezzo || 'NVP Manual');
+          nvpResult.nvpDetails = nvpDetails; // save details for later editing
+          processedResults.push(nvpResult);
+          dispatch({ type: 'ADD_RESULTADO', payload: nvpResult });
+          addLog(`✓ NVP: ${el.descricao.slice(0, 40)} → €${valoreUnitario}/cad`, 'ok');
         }
       }
 
       dispatch({ type: 'SET_PROCESSING', payload: false });
-      addLog('\n✓ Processamento concluído!', 'ok');
+      addLog('\n✓ Processamento concluído! Acesse os Resultados para exportar o Excel.', 'ok');
       setTimeout(onDone, 1200);
     })().catch(e => addLog(`Erro fatal: ${String(e)}`, 'err'));
   }, []);
@@ -97,30 +278,30 @@ export function ProcessingView({
 
   return (
     <div className="flex-1 overflow-hidden p-8 flex flex-col gap-6">
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+      <div className="bg-gray-100 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-3">
-          <span className="text-white/60 text-sm">{state.progress.message || 'Iniciando...'}</span>
-          <span className="text-white font-black text-lg">{pct}%</span>
+          <span className="text-gray-600 dark:text-white/60 text-sm">{state.progress.message || 'Iniciando...'}</span>
+          <span className="text-gray-900 dark:text-white font-black text-lg">{pct}%</span>
         </div>
-        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-2 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
           <motion.div
             className="h-full bg-gradient-to-r from-[#0F3460] to-[#E94560] rounded-full"
             animate={{ width: `${pct}%` }}
             transition={{ duration: 0.4 }}
           />
         </div>
-        <div className="flex justify-between text-xs text-white/30 mt-2">
+        <div className="flex justify-between text-xs text-gray-400 dark:text-white/30 mt-2">
           <span>{state.progress.current} de {state.progress.total}</span>
-          <span>Claude API</span>
+          <span>Gemini AI</span>
         </div>
       </div>
 
-      <div ref={logRef} className="flex-1 bg-[#080C14] border border-white/5 rounded-2xl p-5 overflow-auto font-mono text-xs leading-6">
+      <div ref={logRef} className="flex-1 bg-white dark:bg-[#080C14] border border-gray-200 dark:border-white/5 rounded-2xl p-5 overflow-auto font-mono text-xs leading-6">
         {log.map((entry, i) => (
           <div key={i} className={
             entry.type === 'ok' ? 'text-green-400' :
             entry.type === 'alert' ? 'text-yellow-400' :
-            entry.type === 'err' ? 'text-red-400' : 'text-white/40'
+            entry.type === 'err' ? 'text-red-400' : 'text-gray-500 dark:text-white/40'
           }>
             {entry.type === 'ok'    && <CheckCircle2 size={11} className="inline mr-1 mb-0.5" />}
             {entry.type === 'alert' && <AlertTriangle size={11} className="inline mr-1 mb-0.5" />}
@@ -133,46 +314,17 @@ export function ProcessingView({
 
       <AnimatePresence>
         {nvpModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-              className="bg-[#0A1628] border border-[#E94560]/30 rounded-3xl p-8 max-w-md w-full shadow-2xl">
-              <div className="mb-2 text-xs font-bold tracking-widest text-[#E94560] uppercase">Item NVP</div>
-              <h3 className="text-white text-lg font-bold mb-1">{nvpModal.elemento.descrizione}</h3>
-              <p className="text-white/40 text-sm mb-6">
-                {nvpModal.elemento.edificio} / {nvpModal.elemento.livello} · {nvpModal.elemento.quantita} {nvpModal.elemento.um}
-              </p>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs text-white/40 font-bold uppercase tracking-widest block mb-2">Valore Unitario (€)</label>
-                  <input type="number" step="0.01" min="0" value={nvpValue} onChange={e => setNvpValue(e.target.value)}
-                    placeholder="0.00" autoFocus
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-lg font-bold focus:outline-none focus:border-[#E94560]/50" />
-                </div>
-                <div>
-                  <label className="text-xs text-white/40 font-bold uppercase tracking-widest block mb-2">Fonte / Fornecedor</label>
-                  <input type="text" value={nvpFonte} onChange={e => setNvpFonte(e.target.value)}
-                    placeholder="Ex: Schneider, ABB, orçamento..."
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-[#E94560]/50" />
-                </div>
-              </div>
-              <div className="mt-6 flex gap-3">
-                <button onClick={() => {
-                  const v = parseFloat(nvpValue.replace(',', '.')) || 0;
-                  nvpModal.resolve({ valoreUnitario: v, originePrezzo: nvpFonte });
-                  setNvpModal(null); setNvpValue(''); setNvpFonte('');
-                }} className="flex-1 bg-gradient-to-r from-[#0F3460] to-[#E94560] text-white font-black text-sm tracking-widest uppercase py-3 rounded-xl">
-                  CONFIRMAR
-                </button>
-                <button onClick={() => {
-                  nvpModal.resolve({ valoreUnitario: 0, originePrezzo: 'NVP — Não informado' });
-                  setNvpModal(null); setNvpValue(''); setNvpFonte('');
-                }} className="px-5 bg-white/5 text-white/50 rounded-xl text-sm">
-                  Pular
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
+          <NvpBuilderModal 
+            elemento={nvpModal.elemento}
+            onConfirm={(valoreUnitario, originePrezzo, nvpDetails) => {
+              nvpModal.resolve({ valoreUnitario, originePrezzo, nvpDetails });
+              setNvpModal(null);
+            }}
+            onSkip={() => {
+              nvpModal.resolve({ valoreUnitario: 0, originePrezzo: 'NVP — Non informato', nvpDetails: null });
+              setNvpModal(null);
+            }}
+          />
         )}
       </AnimatePresence>
     </div>

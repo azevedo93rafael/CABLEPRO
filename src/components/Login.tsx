@@ -56,13 +56,15 @@ export function Login({ t, onLogin }: { t: Translation, onLogin: (user: any) => 
 
           if (profileError) throw profileError;
 
-          if (profile.email === 'rafael.azevedo.93@live.com' || profile.is_approved === 1) {
+          const ALL_MODULES = ['cablefill', 'capitolato', 'cabine-mt', 'project-management', 'cme-generator'];
+          const isAdmin = profile.email === 'rafael.azevedo.93@live.com';
+          if (isAdmin || profile.is_approved === 1) {
             onLogin({ 
               id: profile.id, 
               email: profile.email, 
               name: profile.name || profile.full_name || profile.nome || profile.display_name || profile.username || data.user.user_metadata?.name || data.user.user_metadata?.full_name,
-              role: profile.email === 'rafael.azevedo.93@live.com' ? 'admin' : profile.role,
-              accessible_modules: profile.accessible_modules || ['cablefill', 'capitolato']
+              role: isAdmin ? 'admin' : profile.role,
+              accessible_modules: isAdmin ? ALL_MODULES : (profile.accessible_modules || ['cablefill', 'capitolato'])
             });
           } else {
             try {

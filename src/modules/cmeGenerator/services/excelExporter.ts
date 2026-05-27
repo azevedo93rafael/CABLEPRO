@@ -1,107 +1,89 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // src/modules/cmeGenerator/services/excelExporter.ts
 // Generate a 5-sheet .xlsx workbook from ResultadoItem[]
-// Uses dynamic imports to avoid bundling node: builtins at page load time
+// Uses SheetJS (xlsx) — 100% browser-native, no Node.js dependencies.
 // ─────────────────────────────────────────────────────────────────────────────
 import type { ResultadoItem } from '../types';
-import type ExcelJS from 'exceljs';
+import type * as XLSXType from 'xlsx';
 
-// ── Color palette ─────────────────────────────────────────────────────────────
-const COLORS = {
-  headerBg: '0F3460',
-  headerFg: 'FFFFFF',
-  ok:       'D4EDDA',
-  alert:    'FFF3CD',
-  notFound: 'F8D7DA',
-  nvp:      'D1ECF1',
-  subtotal: 'E8EAF6',
-  total:    '1A237E',
-  totalFg:  'FFFFFF',
-};
+// ── Color palette (used in cell styles via SheetJS-style) ─────────────────────
+// Note: SheetJS community edition has limited style support.
+// We use cell metadata and rely on data organisation for visual clarity.
 
-function applyHeader(ws: ExcelJS.Worksheet, cols: string[], row = 1): void {
-  const headerRow = ws.getRow(row);
-  cols.forEach((col, i) => {
-    const cell = headerRow.getCell(i + 1);
-    cell.value = col;
-    cell.font = { bold: true, color: { argb: COLORS.headerFg }, size: 11 };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerBg } };
-    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    cell.border = { bottom: { style: 'medium', color: { argb: COLORS.headerFg } } };
-  });
-  headerRow.height = 28;
-}
-
-function statusColor(status: string): string {
-  if (status === 'OK')    return COLORS.ok;
-  if (status === 'ALERT') return COLORS.alert;
-  if (status === 'NVP')   return COLORS.nvp;
-  return COLORS.notFound;
-}
-
-function buildComputo(wb: ExcelJS.Workbook, results: ResultadoItem[]): void {
-  const ws = wb.addWorksheet('Computo');
-  ws.columns = [
-    { key: 'edificio',    width: 16 },
-    { key: 'livello',     width: 12 },
-    { key: 'zona',        width: 14 },
-    { key: 'categoria',   width: 18 },
-    { key: 'descrizione', width: 42 },
-    { key: 'qtd',         width: 9  },
-    { key: 'um',          width: 8  },
-    { key: 'valore',      width: 14 },
-    { key: 'total',       width: 16 },
-    { key: 'origine',     width: 18 },
-    { key: 'status',      width: 12 },
+function buildComputoSheet(XLSX: typeof XLSXType, results: ResultadoItem[]): XLSXType.WorkSheet {
+  const headers = [
+    'EDIFICIO', 'LIVELLO', 'ZONA', 'IMPIANTO', 'CATEGORIA', 'DESCRIZIONE',
+    'QTD', 'UM', 'VALORE UNIT.', 'TOTALE (€)', 'PREZZARIO', 'STATUS',
   ];
 
-  applyHeader(ws, [
-    'EDIFICIO', 'LIVELLO', 'ZONA', 'CATEGORIA', 'DESCRIZIONE',
-    'QTD', 'UM', 'VALORE UNIT.', 'TOTALE', 'PREZZARIO', 'STATUS',
-  ]);
+  const dataRows: any[][] = [];
 
-  let grandTotal = 0;
-  results.forEach((r, i) => {
-    const rowNum = i + 2;
-    const row = ws.getRow(rowNum);
-    row.values = [
-      r.edificio, r.livello, r.zona, r.categoria, r.descrizioneElemento,
-      r.quantitaElemento, r.unidade, r.valoreUnitario, r.total, r.originePrezzo, r.status,
-    ];
-    const bgColor = statusColor(r.status);
-    row.eachCell({ includeEmpty: true }, cell => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
-      cell.alignment = { vertical: 'middle', wrapText: false };
-    });
-    row.getCell(8).numFmt = '#,##0.00';
-    row.getCell(9).numFmt = '#,##0.00';
-    row.height = 20;
-    grandTotal += r.total;
-  });
+  for (const item of results) {
+    // Main header row for the element (bold, WBS and Code empty)
+    dataRows.push([
+      '', // EDIFICIO
+      '', // LIVELLO
+      '', // ZONA
+      item.tipoImpianto || '', // IMPIANTO
+      item.categoria,
+      item.descrizioneElemento,
+      item.quantitaElemento,
+      item.unidade || '',
+      item.valoreUnitario,
+      item.total,
+      item.originePrezzo,
+      item.status,
+    ]);
 
-  const totalRow = ws.getRow(results.length + 2);
-  totalRow.getCell(4).value = 'TOTALE GENERALE';
-  totalRow.getCell(9).value = grandTotal;
-  totalRow.getCell(9).numFmt = '#,##0.00';
-  totalRow.eachCell({ includeEmpty: false }, cell => {
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.total } };
-    cell.font = { bold: true, color: { argb: COLORS.totalFg } };
-  });
-  totalRow.height = 24;
+    // Sub items underneath
+    const subItemsList = item.subItems && item.subItems.length > 0 ? item.subItems : [{
+      codicePrezzarioTarget: item.tariffaOriginal || item.idElemento,
+      descrizionePrezzarioTarget: item.descrizioneElemento,
+      unidade: item.unidade || '',
+      quantitaComposizione: 1,
+      valoreUnitario: item.valoreUnitario,
+      status: item.status
+    }];
 
-  ws.autoFilter = { from: 'A1', to: 'K1' };
-  ws.views = [{ state: 'frozen', ySplit: 1 }];
+    for (const sub of subItemsList) {
+      const childQty = item.quantitaElemento * (sub.quantitaComposizione || 1);
+      const childTot = childQty * (sub.valoreUnitario || 0);
+      dataRows.push([
+        item.edificio,
+        item.livello,
+        item.zona,
+        item.tipoImpianto || '', // IMPIANTO
+        item.categoria,
+        `  [${sub.codicePrezzarioTarget || 'NVP'}] ${sub.descrizionePrezzarioTarget}`,
+        childQty,
+        sub.unidade || (sub as any).um || '',
+        sub.valoreUnitario,
+        childTot,
+        '',
+        '',
+      ]);
+    }
+  }
+
+  const grandTotal = results.reduce((s, r) => s + r.total, 0);
+  const totalRow = ['', '', '', '', 'TOTALE GENERALE', '', '', '', '', grandTotal, '', ''];
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows, totalRow]);
+
+  // Set column widths
+  ws['!cols'] = [
+    { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 18 }, { wch: 18 }, { wch: 48 },
+    { wch: 9 },  { wch: 8 },  { wch: 14 }, { wch: 16 }, { wch: 18 }, { wch: 12 },
+  ];
+
+  // Freeze first row
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+  return ws;
 }
 
-function buildCategoria(wb: ExcelJS.Workbook, results: ResultadoItem[]): void {
-  const ws = wb.addWorksheet('Categoria');
-  ws.columns = [
-    { key: 'categoria', width: 30 },
-    { key: 'count',     width: 12 },
-    { key: 'total',     width: 18 },
-    { key: 'pct',       width: 12 },
-  ];
-  applyHeader(ws, ['CATEGORIA', 'QTD ITENS', 'TOTALE (€)', '%']);
+function buildCategoriaSheet(XLSX: typeof XLSXType, results: ResultadoItem[]): XLSXType.WorkSheet {
+  const headers = ['CATEGORIA', 'QTD ITENS', 'TOTALE (€)', '%'];
 
   const map = new Map<string, { count: number; total: number }>();
   const grandTotal = results.reduce((s, r) => s + r.total, 0);
@@ -112,68 +94,48 @@ function buildCategoria(wb: ExcelJS.Workbook, results: ResultadoItem[]): void {
     map.set(r.categoria, entry);
   }
 
-  let rowNum = 2;
-  for (const [cat, data] of [...map.entries()].sort((a, b) => b[1].total - a[1].total)) {
-    const row = ws.getRow(rowNum++);
-    row.values = [cat, data.count, data.total, grandTotal > 0 ? data.total / grandTotal : 0];
-    row.getCell(3).numFmt = '#,##0.00';
-    row.getCell(4).numFmt = '0.0%';
-    row.height = 20;
-  }
+  const dataRows = [...map.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([cat, data]) => [
+      cat,
+      data.count,
+      data.total,
+      grandTotal > 0 ? (data.total / grandTotal * 100).toFixed(1) + '%' : '0.0%',
+    ]);
 
-  const tRow = ws.getRow(rowNum);
-  tRow.values = ['TOTALE', results.length, grandTotal, 1];
-  tRow.getCell(3).numFmt = '#,##0.00';
-  tRow.getCell(4).numFmt = '0.0%';
-  tRow.eachCell({ includeEmpty: false }, cell => {
-    cell.font = { bold: true };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.subtotal } };
-  });
+  const totalRow = ['TOTALE', results.length, grandTotal, '100.0%'];
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows, totalRow]);
+  ws['!cols'] = [{ wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 12 }];
+  return ws;
 }
 
-function buildLivello(wb: ExcelJS.Workbook, results: ResultadoItem[]): void {
-  const ws = wb.addWorksheet('Livello');
+function buildLivelloSheet(XLSX: typeof XLSXType, results: ResultadoItem[]): XLSXType.WorkSheet {
   const edificios = [...new Set(results.map(r => r.edificio))].sort();
   const livelli   = [...new Set(results.map(r => r.livello))].sort();
 
-  ws.getRow(1).getCell(1).value = 'LIVELLO \\ EDIFICIO';
-  ws.getRow(1).getCell(1).font = { bold: true };
-
-  edificios.forEach((ed, i) => {
-    ws.getRow(1).getCell(i + 2).value = ed;
-    ws.getRow(1).getCell(i + 2).font = { bold: true };
-    ws.columns[i + 1] = { width: 16 };
-  });
-  ws.columns[0] = { width: 20 };
-
-  livelli.forEach((lv, rowIdx) => {
-    const row = ws.getRow(rowIdx + 2);
-    row.getCell(1).value = lv;
-    row.getCell(1).font = { bold: true };
-    edificios.forEach((ed, colIdx) => {
+  const headers = ['LIVELLO \\ EDIFICIO', ...edificios];
+  const dataRows = livelli.map(lv => {
+    const row: any[] = [lv];
+    for (const ed of edificios) {
       const total = results
         .filter(r => r.livello === lv && r.edificio === ed)
         .reduce((s, r) => s + r.total, 0);
-      const cell = row.getCell(colIdx + 2);
-      cell.value = total || null;
-      cell.numFmt = '#,##0.00';
-    });
-    row.height = 20;
+      row.push(total > 0 ? total : '');
+    }
+    return row;
   });
+
+  const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+  ws['!cols'] = [{ wch: 20 }, ...edificios.map(() => ({ wch: 16 }))];
+  return ws;
 }
 
-function buildEdificio(wb: ExcelJS.Workbook, results: ResultadoItem[]): void {
-  const ws = wb.addWorksheet('Edificio');
-  ws.columns = [
-    { key: 'edificio',  width: 20 },
-    { key: 'categoria', width: 26 },
-    { key: 'total',     width: 18 },
-  ];
-  applyHeader(ws, ['EDIFICIO', 'CATEGORIA', 'TOTALE (€)']);
+function buildEdificioSheet(XLSX: typeof XLSXType, results: ResultadoItem[]): XLSXType.WorkSheet {
+  const headers = ['EDIFICIO', 'CATEGORIA', 'TOTALE (€)'];
+  const rows: any[][] = [headers];
 
   const edificios = [...new Set(results.map(r => r.edificio))].sort();
-  let rowNum = 2;
-
   for (const ed of edificios) {
     const edItems = results.filter(r => r.edificio === ed);
     const catMap = new Map<string, number>();
@@ -181,42 +143,27 @@ function buildEdificio(wb: ExcelJS.Workbook, results: ResultadoItem[]): void {
     const edTotal = edItems.reduce((s, r) => s + r.total, 0);
 
     for (const [cat, total] of [...catMap.entries()].sort((a, b) => b[1] - a[1])) {
-      const row = ws.getRow(rowNum++);
-      row.values = [ed, cat, total];
-      row.getCell(3).numFmt = '#,##0.00';
-      row.height = 20;
+      rows.push([ed, cat, total]);
     }
-
-    const stRow = ws.getRow(rowNum++);
-    stRow.values = [`Subtotale ${ed}`, '', edTotal];
-    stRow.getCell(3).numFmt = '#,##0.00';
-    stRow.eachCell({ includeEmpty: false }, cell => {
-      cell.font = { bold: true, italic: true };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.subtotal } };
-    });
+    rows.push([`Subtotale ${ed}`, '', edTotal]);
   }
 
-  const tRow = ws.getRow(rowNum);
-  const gt = results.reduce((s, r) => s + r.total, 0);
-  tRow.values = ['TOTALE GENERALE', '', gt];
-  tRow.getCell(3).numFmt = '#,##0.00';
-  tRow.eachCell({ includeEmpty: false }, cell => {
-    cell.font = { bold: true, color: { argb: COLORS.totalFg } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.total } };
-  });
+  const grandTotal = results.reduce((s, r) => s + r.total, 0);
+  rows.push(['TOTALE GENERALE', '', grandTotal]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 20 }, { wch: 26 }, { wch: 18 }];
+  return ws;
 }
 
-function buildDashboard(wb: ExcelJS.Workbook, results: ResultadoItem[]): void {
-  const ws = wb.addWorksheet('Dashboard');
-  ws.columns = [{ width: 30 }, { width: 22 }];
-
+function buildDashboardSheet(XLSX: typeof XLSXType, results: ResultadoItem[]): XLSXType.WorkSheet {
   const grandTotal = results.reduce((s, r) => s + r.total, 0);
   const okCount    = results.filter(r => r.status === 'OK').length;
   const alertCount = results.filter(r => r.status === 'ALERT').length;
   const nfCount    = results.filter(r => r.status === 'NAO_ENCONTRADO').length;
   const nvpCount   = results.filter(r => r.status === 'NVP').length;
 
-  const kpis: [string | number, string | number][] = [
+  const rows: any[][] = [
     ['DASHBOARD — COMPUTO METRICO', ''],
     ['', ''],
     ['KPI', 'Valore'],
@@ -233,31 +180,9 @@ function buildDashboard(wb: ExcelJS.Workbook, results: ResultadoItem[]): void {
     ['◈ NVP', nvpCount],
   ];
 
-  kpis.forEach(([label, value], i) => {
-    const rowNum = i + 1;
-    const row = ws.getRow(rowNum);
-    row.getCell(1).value = label;
-    row.getCell(2).value = value;
-
-    if (rowNum === 1) {
-      row.getCell(1).font = { bold: true, size: 14, color: { argb: COLORS.totalFg } };
-      row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerBg } };
-      row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.headerBg } };
-      row.height = 30;
-    } else if (label === 'KPI' || label === 'STATUS') {
-      row.getCell(1).font = { bold: true };
-      row.getCell(2).font = { bold: true };
-      row.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.subtotal } };
-      row.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: COLORS.subtotal } };
-    }
-
-    if (label === 'Totale Generale (€)') {
-      row.getCell(2).numFmt = '#,##0.00';
-      row.getCell(2).font = { bold: true };
-    }
-
-    row.height = row.height || 20;
-  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 30 }, { wch: 22 }];
+  return ws;
 }
 
 // ── Public export — all heavy imports are lazy ────────────────────────────────
@@ -266,22 +191,25 @@ export async function exportExcel(
   filename = 'Computo_Metrico.xlsx',
 ): Promise<void> {
   // Dynamic imports: only pulled in when the user clicks Export
-  const [{ default: ExcelJS }, { saveAs }] = await Promise.all([
-    import('exceljs'),
+  const [XLSX, { saveAs }] = await Promise.all([
+    import('xlsx'),
     import('file-saver'),
   ]);
 
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'CABLEPRO CME Generator';
-  wb.created = new Date();
+  const wb = XLSX.utils.book_new();
+  wb.Props = {
+    Title: 'Computo Metrico Estimativo',
+    Author: 'CABLEPRO CME Generator',
+    CreatedDate: new Date(),
+  };
 
-  buildComputo(wb, results);
-  buildCategoria(wb, results);
-  buildLivello(wb, results);
-  buildEdificio(wb, results);
-  buildDashboard(wb, results);
+  XLSX.utils.book_append_sheet(wb, buildComputoSheet(XLSX, results), 'Computo');
+  XLSX.utils.book_append_sheet(wb, buildCategoriaSheet(XLSX, results), 'Categoria');
+  XLSX.utils.book_append_sheet(wb, buildLivelloSheet(XLSX, results), 'Livello');
+  XLSX.utils.book_append_sheet(wb, buildEdificioSheet(XLSX, results), 'Edificio');
+  XLSX.utils.book_append_sheet(wb, buildDashboardSheet(XLSX, results), 'Dashboard');
 
-  const buffer = await wb.xlsx.writeBuffer();
+  const buffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   saveAs(new Blob([buffer], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   }), filename);

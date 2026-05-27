@@ -54,34 +54,35 @@ export const exportToPDF = async (data: ReportData, filename: string) => {
     const structW = data.structure.width;
     const structH = isConduit ? data.structure.width : data.structure.height;
     
-    const numStructures = data.packedStructures && data.packedStructures.length > 0 ? data.packedStructures.length : 1;
-    const spacing = 10; // mm spacing between structures
-    const totalStructW = (structW * numStructures) + (spacing * (numStructures - 1));
+    let currentY = schematicY + 10;
     
-    const structRatio = totalStructW / structH;
+    // Use a fixed scale instead of fitting all into one line.
+    // E.g. structure fits into maxW / maxH for a SINGLE structure.
+    const structRatio = structW / structH;
+    let singleBoxW = maxW;
+    let singleBoxH = maxW / structRatio;
     
-    let schematicBoxW = maxW;
-    let schematicBoxH = maxW / structRatio;
-    
-    if (schematicBoxH > maxH) {
-      schematicBoxH = maxH;
-      schematicBoxW = maxH * structRatio;
+    if (singleBoxH > maxH) {
+      singleBoxH = maxH;
+      singleBoxW = maxH * structRatio;
     }
-
-    const scale = schematicBoxW / totalStructW;
-    const singleBoxW = structW * scale;
-    const singleBoxH = structH * scale;
-    const spacingW = spacing * scale;
-
-    const schematicX = (pageWidth - schematicBoxW) / 2;
-    const schematicBoxY = schematicY + 10;
+    
+    const scale = singleBoxW / structW;
+    const schematicX = (pageWidth - singleBoxW) / 2;
 
     const structuresToDraw = data.packedStructures && data.packedStructures.length > 0 
       ? data.packedStructures 
       : [{ cables: [], currentArea: 0 }];
 
     structuresToDraw.forEach((structData, sIdx) => {
-      const currentBoxX = schematicX + (sIdx * (singleBoxW + spacingW));
+      // Check for page wrap
+      if (currentY + singleBoxH > pageHeight - margin - 20) {
+        pdf.addPage();
+        currentY = margin + 10;
+      }
+
+      const currentBoxX = schematicX;
+      const schematicBoxY = currentY;
 
       // Structure Name
       pdf.setFontSize(8);
@@ -234,10 +235,18 @@ export const exportToPDF = async (data: ReportData, filename: string) => {
         pdf.text(`${structH}mm`, currentBoxX - 5, schematicBoxY + (singleBoxH / 2), { angle: 90, align: 'center' });
       }
       pdf.text(`${structW}mm`, currentBoxX + (singleBoxW / 2), schematicBoxY + singleBoxH + 5, { align: 'center' });
+      
+      // Update Y for next structure in the column
+      currentY += singleBoxH + 20;
     });
 
     // 4. Cable Manifesto (Using AutoTable for vector table)
-    const tableY = schematicBoxY + schematicBoxH + 20;
+    // Avoid drawing table over the page margin
+    if (currentY > pageHeight - margin - 40) {
+      pdf.addPage();
+      currentY = margin + 10;
+    }
+    const tableY = currentY + 10;
     pdf.setTextColor(0, 0, 0);
     pdf.setFontSize(9);
     pdf.setFont('helvetica', 'bold');

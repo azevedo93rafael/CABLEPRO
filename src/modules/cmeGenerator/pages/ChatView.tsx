@@ -53,7 +53,7 @@ export function ChatView({ selectedId }: ChatViewProps) {
 
   if (!selectedId || !result) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-white/30 gap-4">
+      <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-white/30 gap-4">
         <Bot size={48} className="opacity-30" />
         <p className="text-sm">Clique em um elemento na aba Computo para iniciar o chat</p>
       </div>
@@ -63,16 +63,16 @@ export function ChatView({ selectedId }: ChatViewProps) {
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       {/* Context banner */}
-      <div className="px-6 py-3 border-b border-white/5 bg-[#0F3460]/20">
-        <p className="text-xs text-white/40 uppercase tracking-widest">Elemento selecionado</p>
-        <p className="text-white font-bold text-sm truncate">{result.descrizioneElemento}</p>
-        <p className="text-white/40 text-xs">{result.edificio} / {result.livello} · €{result.total.toFixed(2)} · {result.status}</p>
+      <div className="px-6 py-3 border-b border-gray-200 dark:border-white/5 bg-[#0F3460]/20">
+        <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-widest">Elemento selecionado</p>
+        <p className="text-gray-900 dark:text-white font-bold text-sm truncate">{result.descrizioneElemento}</p>
+        <p className="text-gray-500 dark:text-white/40 text-xs">{result.edificio} / {result.livello} · €{result.total.toFixed(2)} · {result.status}</p>
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-auto px-6 py-4 space-y-4">
         {localMessages.length === 0 && (
-          <div className="text-center text-white/30 text-sm pt-8">
+          <div className="text-center text-gray-400 dark:text-white/30 text-sm pt-8">
             <p>Pergunte sobre este elemento ou corrija os dados.</p>
             <p className="text-xs mt-2 text-white/20">Ex: "Muda o valore para 3.50" · "Por que está ALERT?" · "Dobra a quantidade"</p>
           </div>
@@ -84,13 +84,13 @@ export function ChatView({ selectedId }: ChatViewProps) {
               animate={{ opacity: 1, y: 0 }}
               className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0
-                ${msg.role === 'user' ? 'bg-[#E94560]/20 border border-[#E94560]/30' : 'bg-white/10 border border-white/10'}`}>
-                {msg.role === 'user' ? <User size={14} className="text-[#E94560]" /> : <Bot size={14} className="text-white/60" />}
+                ${msg.role === 'user' ? 'bg-[#E94560]/20 border border-[#E94560]/30' : 'bg-gray-200 dark:bg-white/10 border border-gray-300 dark:border-white/10'}`}>
+                {msg.role === 'user' ? <User size={14} className="text-[#E94560]" /> : <Bot size={14} className="text-gray-600 dark:text-white/60" />}
               </div>
               <div className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed
                 ${msg.role === 'user'
-                  ? 'bg-[#E94560]/15 border border-[#E94560]/20 text-white ml-auto'
-                  : 'bg-white/5 border border-white/10 text-white/80'}`}>
+                  ? 'bg-[#E94560]/15 border border-[#E94560]/20 text-gray-900 dark:text-white ml-auto'
+                  : 'bg-gray-100 dark:bg-white/5 border border-gray-300 dark:border-white/10 text-gray-800 dark:text-white/80'}`}>
                 {msg.content}
               </div>
             </motion.div>
@@ -98,10 +98,10 @@ export function ChatView({ selectedId }: ChatViewProps) {
         </AnimatePresence>
         {busy && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-white/10 border border-white/10 flex items-center justify-center">
-              <Bot size={14} className="text-white/60" />
+            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-white/10 border border-gray-300 dark:border-white/10 flex items-center justify-center">
+              <Bot size={14} className="text-gray-600 dark:text-white/60" />
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex gap-1.5 items-center">
+            <div className="bg-gray-100 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-2xl px-4 py-3 flex gap-1.5 items-center">
               {[0, 1, 2].map(i => (
                 <div key={i} className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce"
                   style={{ animationDelay: `${i * 0.15}s` }} />
@@ -113,7 +113,7 @@ export function ChatView({ selectedId }: ChatViewProps) {
       </div>
 
       {/* Input */}
-      <div className="px-6 pb-6 pt-3 border-t border-white/5">
+      <div className="px-6 pb-6 pt-3 border-t border-gray-200 dark:border-white/5">
         <div className="flex gap-3">
           <input
             value={input}
@@ -121,7 +121,7 @@ export function ChatView({ selectedId }: ChatViewProps) {
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
             disabled={busy}
             placeholder="Digite um comando ou pergunta..."
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-[#E94560]/40"
+            className="flex-1 bg-gray-100 dark:bg-white/5 border border-gray-300 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:border-[#E94560]/40"
           />
           <button
             onClick={send}
